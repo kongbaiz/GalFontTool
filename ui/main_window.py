@@ -296,8 +296,21 @@ class GalFontTool(QMainWindow):
         self.in_font_name = IOSInput("My Game Font", "My Game Font"); self.in_font_name.setToolTip("字体内部名称，游戏引擎读取时使用")
         self.in_output_dir = IOSInput("留空则输出到源文件同目录", ""); self.in_output_dir.setToolTip("自定义输出目录，留空则与源字体同目录")
         self.btn_output_dir = QPushButton("📁"); self.btn_output_dir.setFixedSize(40, 30); self.btn_output_dir.clicked.connect(lambda: self.browse_folder(self.in_output_dir))
-        self.combo_mode = QComboBox(); self.combo_mode.addItems(["👉 请选择处理模式...", "✅ 日繁映射: CN -> JP (生成日繁字体)", "🔄 逆向映射: JP -> CN (生成逆向字体)", "👺 仅伪装日文 (不改字形)", "🔀 字形转换: 繁体 -> 简体 (OpenCC)", "🔀 字形转换: 简体 -> 繁体 (OpenCC)"])
+        self.combo_mode = QComboBox(); self.combo_mode.addItems(["👉 请选择处理模式...", "✅ 日繁映射: CN -> JP (生成日繁字体)", "🔄 逆向映射: JP -> CN (生成逆向字体)", "🎭 仅修改代码页标识 (不改字形)", "🔀 字形转换: 繁体 -> 简体 (OpenCC)", "🔀 字形转换: 简体 -> 繁体 (OpenCC)"])
         self.combo_mode.setCurrentIndex(0); self.combo_mode.currentIndexChanged.connect(self.on_mode_change); self.combo_mode.setToolTip("通常翻译请选择模式 1，配合生成的映射表使用")
+        self.combo_mode.setFixedHeight(38)
+        
+        self.combo_charset = QComboBox()
+        self.combo_charset.addItems([
+            "128 - Shift-JIS (日文)",
+            "134 - GB2312 (简体中文)",
+            "136 - Big5 (繁体中文)",
+            "1 - Default (西欧/通用)",
+            "129 - Hangeul (韩文)"
+        ])
+        self.combo_charset.setToolTip("注入到字体的代码页标识 (ulCodePageRange)。\n游戏引擎通常根据此标志识别字体语言。")
+        self.combo_charset.setFixedHeight(38)
+        
         from PyQt6.QtWidgets import QCheckBox
         self.chk_lock_file_name = QCheckBox("🔒"); self.chk_lock_file_name.setFixedWidth(35); self.chk_lock_file_name.setToolTip("锁定输出文件名，不随主字体变化")
         self.chk_lock_font_name = QCheckBox("🔒"); self.chk_lock_font_name.setFixedWidth(35); self.chk_lock_font_name.setToolTip("锁定内部字体名，不随主字体变化")
@@ -308,6 +321,7 @@ class GalFontTool(QMainWindow):
         out_dir_row = QHBoxLayout(); out_dir_row.addWidget(self.in_output_dir); out_dir_row.addWidget(self.btn_output_dir)
         f_conf_l.addWidget(QLabel("输出目录:"), 2, 0); f_conf_l.addLayout(out_dir_row, 2, 1)
         f_conf_l.addWidget(QLabel("处理模式:"), 3, 0); f_conf_l.addWidget(self.combo_mode, 3, 1)
+        f_conf_l.addWidget(QLabel("代码页(Charset):"), 4, 0); f_conf_l.addWidget(self.combo_charset, 4, 1)
         left_layout.addLayout(f_conf_l)
         left_layout.addSpacing(10)
 

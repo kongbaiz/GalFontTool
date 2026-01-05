@@ -35,6 +35,7 @@ def reset_to_default(main_window):
         main_window.in_file_name.setText("game.ttf")
         main_window.in_font_name.setText("My Game Font")
         main_window.combo_mode.setCurrentIndex(0)
+        main_window.combo_charset.setCurrentIndex(0)
         main_window.apply_theme("🌊 深海 (Ocean)")
         main_window.log_area.clear()
         main_window.log_area.append("✅ 已恢复默认设置。")
@@ -43,7 +44,8 @@ def save_preset(main_window):
     preset = {
         'src': main_window.in_src.text(), 'fallback': main_window.in_fallback.text(), 'json': main_window.in_json.text(),
         'file_name': main_window.in_file_name.text(), 'font_name': main_window.in_font_name.text(),
-        'mode': main_window.combo_mode.currentIndex(), 'theme': main_window.current_theme_name,
+        'mode': main_window.combo_mode.currentIndex(), 'charset': main_window.combo_charset.currentIndex(),
+        'theme': main_window.current_theme_name,
         'map_src': main_window.map_src.text(), 'map_out': main_window.map_out.text(), 'map_json': main_window.map_json.text(),
         'map_ext': main_window.map_ext.text(), 'sub_font': main_window.sub_font.text(), 'sub_txt': main_window.sub_txt.text(),
         'sub_json': main_window.sub_json.text(), 'sub_out': main_window.sub_out.text(),
@@ -73,6 +75,7 @@ def load_preset(main_window):
         if 'file_name' in preset: main_window.in_file_name.setText(preset['file_name'])
         if 'font_name' in preset: main_window.in_font_name.setText(preset['font_name'])
         if 'mode' in preset: main_window.combo_mode.setCurrentIndex(preset['mode'])
+        if 'charset' in preset: main_window.combo_charset.setCurrentIndex(preset['charset'])
         if 'theme' in preset:
             idx = main_window.combo_theme.findText(preset['theme'])
             if idx >= 0: main_window.combo_theme.setCurrentIndex(idx)
@@ -148,6 +151,8 @@ def load_settings(main_window):
     main_window.chk_lock_font_name.setChecked(main_window.settings.value("lock_font_name", False) == "true" or main_window.settings.value("lock_font_name", False) is True)
     if hasattr(main_window, 'in_output_dir'):
         main_window.in_output_dir.setText(main_window.settings.value("output_dir", ""))
+    main_window.combo_mode.setCurrentIndex(int(main_window.settings.value("mode", 0)))
+    main_window.combo_charset.setCurrentIndex(int(main_window.settings.value("charset", 0)))
     main_window.current_theme_name = main_window.settings.value("theme", "🌊 深海 (Ocean)")
     idx = main_window.combo_theme.findText(main_window.current_theme_name)
     if idx >= 0: main_window.combo_theme.setCurrentIndex(idx)
@@ -306,13 +311,43 @@ def apply_theme(main_window, theme_name):
     
     sb_style = get_scrollbar_style(main_window, t['accent'])
     combo_style = f"""
-        QComboBox {{ border: 1px solid rgba(128,128,128,0.3); border-radius: 8px; padding: 1px 10px; background: {t['input_bg']}; color: {t['text_main']}; }}
-        QComboBox::drop-down {{ border:none; }}
-        QComboBox QAbstractItemView {{ background: {t['card_bg']}; selection-background-color: {t['accent']}; color: {t['text_main']}; border: 1px solid rgba(128,128,128,0.2); }}
+        QComboBox {{ 
+            border: 1px solid rgba(128,128,128,0.2); 
+            border-radius: 10px; 
+            padding: 0 10px; 
+            background: {t['input_bg']}; 
+            color: {t['text_main']}; 
+            height: 38px;
+            font-size: 13px;
+        }}
+        QComboBox:focus {{
+            border: 1px solid {t['accent']};
+            background-color: {t['input_focus']};
+        }}
+        QComboBox::drop-down {{ 
+            border: none; 
+            width: 30px;
+        }}
+        QComboBox::down-arrow {{
+            image: none;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid {t['text_dim']};
+            margin-right: 10px;
+        }}
+        QComboBox QAbstractItemView {{ 
+            background: {t['card_bg']}; 
+            selection-background-color: {t['accent']}; 
+            color: {t['text_main']}; 
+            border: 1px solid rgba(128,128,128,0.2);
+            border-radius: 8px;
+            outline: none;
+        }}
         {sb_style}
     """
     main_window.combo_theme.setStyleSheet(combo_style)
     main_window.combo_mode.setStyleSheet(combo_style)
+    main_window.combo_charset.setStyleSheet(combo_style)
     main_window.tab_container.setStyleSheet(f"background: {t['input_bg']}; border-radius: 15px;")
     main_window.tab_scroll_area.setStyleSheet(f"QScrollArea {{ background: transparent; border: none; }} {sb_style}")
     main_window.switch_tab(main_window.stack.currentIndex())

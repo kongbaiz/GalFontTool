@@ -33,7 +33,7 @@ def build_font(conf, log_signal, prog_signal):
 
     mode_desc = {
         1: "日繁映射 (CN -> JP)", 2: "逆向映射 (JP -> CN)",
-        3: "仅伪装", 4: "繁转简", 5: "简转繁"
+        3: "仅修改代码页标识", 4: "繁转简", 5: "简转繁"
     }.get(mode, "未知")
 
     log_signal(f"<b>🔨 开始字体处理...</b><br>模式: {mode_desc}<br>输入: {os.path.basename(src)}<br>输出: {out_name}")
@@ -135,23 +135,31 @@ def build_font(conf, log_signal, prog_signal):
         
         config_file = 't2s' if mode == 4 else 's2t'
         log_signal(f"🔄 字形转换 ({config_file})...")
+        log_signal(f"   模式 4 = 繁体字显示为简体字形")
+        log_signal(f"   模式 5 = 简体字显示为繁体字形")
         try:
             cc = opencc.OpenCC(config_file)
             mapped_count = 0
             cmap_tables = [t for t in font['cmap'].tables if t.platformID == 3]
             for table in cmap_tables:
                 existing = list(table.cmap.keys())
+                new_mappings = {}
                 for code in existing:
                     try:
-                        s_char = cc.convert(chr(code))
-                        if s_char != chr(code):
-                            s_code = ord(s_char)
-                            if s_code in table.cmap:
-                                table.cmap[code] = table.cmap[s_code]
+                        orig_char = chr(code)
+                        converted_char = cc.convert(orig_char)
+                        if converted_char != orig_char and len(converted_char) == 1:
+                            converted_code = ord(converted_char)
+                            if converted_code in table.cmap:
+                                new_mappings[code] = table.cmap[converted_code]
                                 mapped_count += 1
                     except:
                         pass
+                table.cmap.update(new_mappings)
             ok_count = mapped_count
+            if cmap_tables:
+                ok_count //= len(cmap_tables)
+            log_signal(f"   ✓ 已转换 {ok_count} 个字符映射")
         except Exception as e:
             log_signal(f"❌ OpenCC 失败: {e}")
             return None
@@ -201,12 +209,17 @@ def build_font(conf, log_signal, prog_signal):
         except:
             pass
 
-    log_signal("🇯🇵 注入日文伪装...")
+    log_signal("💉 注入代码页伪装...")
     try:
-        font['OS/2'].ulCodePageRange1 |= (1 << 17)
+        charset_val = conf.get('charset', '128')
+        charset_map = {'128': 17, '134': 18, '136': 20, '1': 0, '129': 19}
+        bit = charset_map.get(charset_val, 17)
+        
+        font['OS/2'].ulCodePageRange1 |= (1 << bit)
         font['OS/2'].ulCodePageRange1 |= (1 << 0)
-    except:
-        pass
+        log_signal(f"   ✓ 已注入 Charset {charset_val} (Bit {bit})")
+    except Exception as e:
+        log_signal(f"   ⚠️ 注入失败: {e}")
 
     if output_dir and os.path.isdir(output_dir):
         out_path = os.path.join(output_dir, out_name)

@@ -933,7 +933,8 @@ def do_gen_font(main_window):
         'file_name': main_window.in_file_name.text(),
         'internal_name': main_window.in_font_name.text(),
         'mode': mode_idx,
-        'output_dir': output_dir
+        'output_dir': output_dir,
+        'charset': main_window.combo_charset.currentText().split(' - ')[0]
     }
     main_window.run_worker('font', conf)
 

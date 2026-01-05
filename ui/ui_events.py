@@ -23,6 +23,8 @@ def closeEvent(main_window, event):
     main_window.settings.setValue("in_json", main_window.in_json.text())
     main_window.settings.setValue("in_file_name", main_window.in_file_name.text())
     main_window.settings.setValue("in_font_name", main_window.in_font_name.text())
+    main_window.settings.setValue("mode", main_window.combo_mode.currentIndex())
+    main_window.settings.setValue("charset", main_window.combo_charset.currentIndex())
     main_window.settings.setValue("lock_file_name", main_window.chk_lock_file_name.isChecked())
     main_window.settings.setValue("lock_font_name", main_window.chk_lock_font_name.isChecked())
     main_window.settings.setValue("theme", main_window.current_theme_name)
