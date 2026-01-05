@@ -296,130 +296,130 @@ def do_merge_fonts(main_window):
         ensure_ttf(base_font, main_window.log, "基础字体")
         base_upm = base_font['head'].unitsPerEm
         
-        fd_base, temp_base_path = tempfile.mkstemp(suffix='.ttf')
-        os.close(fd_base)
-        base_font.save(temp_base_path)
-        base_font.close()
-        
         add_font = TTFont(add_path)
         ensure_ttf(add_font, main_window.log, "来源字体")
         add_upm = add_font['head'].unitsPerEm
-        
-        fd_add, temp_add_path = tempfile.mkstemp(suffix='.ttf')
-        os.close(fd_add)
-        add_font.save(temp_add_path)
-        add_font.close()
-        
-        base_path = temp_base_path
-        add_path = temp_add_path
 
         main_window.log(f"   基础 UPM: {base_upm}, 来源 UPM: {add_upm}")
         
-        if base_upm != add_upm:
-            main_window.log(f"   ⚠️ UPM 不一致，正在缩放来源字体...")
-            temp_fd, temp_add_path = tempfile.mkstemp(suffix='.ttf')
-            os.close(temp_fd)
-
-            add_font = TTFont(add_path)
-            scale = base_upm / add_upm 
-            add_font['head'].unitsPerEm = base_upm
-            
-            if 'hhea' in add_font:
-                hhea = add_font['hhea']
-                hhea.ascent = int(hhea.ascent * scale)
-                hhea.descent = int(hhea.descent * scale)
-                hhea.lineGap = int(hhea.lineGap * scale)
-
-            if 'OS/2' in add_font:
-                os2 = add_font['OS/2']
-                if hasattr(os2, 'sTypoAscender'): os2.sTypoAscender = int(os2.sTypoAscender * scale)
-                if hasattr(os2, 'sTypoDescender'): os2.sTypoDescender = int(os2.sTypoDescender * scale)
-                if hasattr(os2, 'sTypoLineGap'): os2.sTypoLineGap = int(os2.sTypoLineGap * scale)
-                if hasattr(os2, 'usWinAscent'): os2.usWinAscent = int(os2.usWinAscent * scale)
-                if hasattr(os2, 'usWinDescent'): os2.usWinDescent = int(os2.usWinDescent * scale)
-                if hasattr(os2, 'sxHeight') and os2.sxHeight: os2.sxHeight = int(os2.sxHeight * scale)
-                if hasattr(os2, 'sCapHeight') and os2.sCapHeight: os2.sCapHeight = int(os2.sCapHeight * scale)
-
-            hmtx = add_font['hmtx']
-            for name in hmtx.metrics:
-                w, lsb = hmtx.metrics[name]
-                hmtx.metrics[name] = (int(w * scale), int(lsb * scale))
-
-            if 'glyf' in add_font:
-                from fontTools.ttLib.tables._g_l_y_f import GlyphCoordinates
-                glyf = add_font['glyf']
-                for glyphName in glyf.keys():
-                    glyph = glyf[glyphName]
-                    if glyph.numberOfContours > 0:
-                        if hasattr(glyph, 'coordinates') and glyph.coordinates:
-                            coords = glyph.coordinates
-                            new_coords = GlyphCoordinates([(int(x * scale), int(y * scale)) for x, y in coords])
-                            glyph.coordinates = new_coords
-                    elif glyph.numberOfContours == -1:
-                        if hasattr(glyph, 'components'):
-                            for comp in glyph.components:
-                                comp.x = int(comp.x * scale)
-                                comp.y = int(comp.y * scale)
-
-            add_font.save(temp_add_path)
-            add_font.close()
-            main_window.log("   ✓ UPM 转换完成")
+        scale = base_upm / add_upm
+        need_scale = abs(scale - 1.0) > 0.01
 
         filter_text = main_window.merge_filter.text()
-        if filter_text:
-            main_window.log(f"✂️ <b>正在提取指定字符...</b>")
-            main_window.log(f"   目标字符: {filter_text}")
-            try:
-                tmp_font = TTFont(temp_add_path)
-                options = subset.Options()
-                options.name_IDs = []
-                options.drop_tables = [] 
-                options.recalc_bounds = True
-                options.notdef_glyph = False
-                
-                subsetter = subset.Subsetter(options=options)
-                subsetter.populate(text=filter_text)
-                subsetter.subset(tmp_font)
-                
-                fd_sub, subset_path = tempfile.mkstemp(suffix='.ttf')
-                os.close(fd_sub)
-                tmp_font.save(subset_path)
-                tmp_font.close()
-                
-                if temp_add_path != add_path and os.path.exists(temp_add_path):
-                    os.remove(temp_add_path)
-                    
-                temp_add_path = subset_path
-                main_window.log("   ✓ 已生成仅包含指定字符的子集")
-            except Exception as e:
-                main_window.log(f"   ⚠️ 提取字符失败: {e}，将尝试合并全部...")
+        add_cmap = add_font.getBestCmap()
+        base_cmap = base_font.getBestCmap()
 
-        main_window.log("   正在执行合并...")
+        if filter_text:
+            target_codes = [ord(c) for c in filter_text]
+            main_window.log(f"   目标字符: {filter_text}")
+        else:
+            target_codes = [code for code in add_cmap if code not in base_cmap]
+            main_window.log(f"   未指定字符，将补充来源字体中所有缺失的字符 (共 {len(target_codes)} 个)")
+
+        injected_count = 0
+        from fontTools.ttLib.tables._g_l_y_f import GlyphCoordinates
+        from fontTools.pens.ttGlyphPen import TTGlyphPen
+        
+        add_glyph_set = add_font.getGlyphSet()
+        
+        # 预先获取字形顺序，并在循环外维护，最后统一回写
+        glyph_order = list(base_font.getGlyphOrder())
+        order_changed = False
+
+        for code in target_codes:
+            if code not in add_cmap:
+                continue
+            
+            glyph_name = add_cmap[code]
+            
+            # 使用 TTGlyphPen 提取字形，自动处理复合字形分解和格式转换，确保兼容性
+            pen = TTGlyphPen(add_glyph_set)
+            add_glyph_set[glyph_name].draw(pen)
+            new_glyph = pen.glyph()
+            
+            # 缩放
+            if need_scale:
+                if hasattr(new_glyph, 'coordinates') and len(new_glyph.coordinates) > 0:
+                    coords = new_glyph.coordinates
+                    new_glyph.coordinates = GlyphCoordinates([(int(x * scale), int(y * scale)) for x, y in coords])
+                
+                new_glyph.recalcBounds(None)
+                
+                width, lsb = add_font['hmtx'][glyph_name]
+                width = int(width * scale)
+                lsb = int(lsb * scale)
+            else:
+                new_glyph.recalcBounds(None)
+                width, lsb = add_font['hmtx'][glyph_name]
+
+            # 注入到基础字体
+            new_name = f"uni{code:04X}_merged"
+            
+            if new_name not in glyph_order:
+                glyph_order.append(new_name)
+                order_changed = True
+                
+            base_font['glyf'][new_name] = new_glyph
+            
+            # 写入水平度量 (hmtx)
+            if hasattr(base_font['hmtx'], 'metrics'):
+                base_font['hmtx'].metrics[new_name] = (width, lsb)
+            else:
+                base_font['hmtx'][new_name] = (width, lsb)
+
+            # 写入垂直度量 (vmtx) - 关键修复：防止 KeyError
+            if 'vmtx' in base_font:
+                v_height = base_upm # 默认高度为 UPM
+                v_tsb = 0           # 默认顶边距为 0
+                
+                # 尝试从来源字体获取垂直度量
+                if 'vmtx' in add_font and glyph_name in add_font['vmtx'].metrics:
+                    vh, tsb = add_font['vmtx'].metrics[glyph_name]
+                    v_height = int(vh * scale)
+                    v_tsb = int(tsb * scale)
+                
+                if hasattr(base_font['vmtx'], 'metrics'):
+                    base_font['vmtx'].metrics[new_name] = (v_height, v_tsb)
+                else:
+                    base_font['vmtx'][new_name] = (v_height, v_tsb)
+            
+            # 彻底更新所有 cmap 表，确保在所有平台可见
+            for table in base_font['cmap'].tables:
+                table.cmap[code] = new_name
+            
+            injected_count += 1
+
+        if order_changed:
+            base_font.setGlyphOrder(glyph_order)
+
+        # 移除可能冲突的旧表 (GSUB/GPOS 等，因为字形索引已变)
+        for tag in ['GSUB', 'GPOS', 'GDEF']:
+            if tag in base_font:
+                del base_font[tag]
+                main_window.log(f"   ⚠️ 已移除旧的 {tag} 表以确保索引一致性")
 
         if os.path.exists(out_path):
-            history.record_before_overwrite("合并字体", out_path, "覆盖")
+            history.record_before_overwrite("合并字体", out_path, f"注入{injected_count}个字符")
 
-        from fontTools.merge import Merger
-        merger = Merger()
-        merged_font = merger.merge([base_path, temp_add_path])
-        merged_font.save(out_path)
-        merged_font.close()
+        # 确保 maxp 表中的总字数与实际顺序一致
+        if 'maxp' in base_font:
+            base_font['maxp'].numGlyphs = len(glyph_order)
 
-        if temp_add_path != add_path and os.path.exists(temp_add_path):
-            os.remove(temp_add_path)
+        base_font.save(out_path)
+        base_font.close()
+        add_font.close()
 
         if not os.path.exists(out_path):
             return
-        history.record("合并字体", out_path, "合并完成")
+        history.record("合并字体", out_path, f"注入{injected_count}个字符")
         update_history_buttons(main_window)
         
         main_window.log(f"✅ <b>合并完成!</b>")
+        main_window.log(f"   成功注入: {injected_count} 个字符")
         main_window.log(f"   输出: {out_path}")
-        QMessageBox.information(main_window, "合并成功", f"合并完成！\n输出: {out_path}")
-
-    except FileNotFoundError:
-        main_window.log("❌ 缺少组件，请确保安装了 fonttools")
+        QMessageBox.information(main_window, "合并成功", f"合并完成！\n成功从来源字体中提取并注入了 {injected_count} 个字符。\n输出: {out_path}")
     except Exception as e:
+
         main_window.log(f"❌ 合并失败: {e}")
         traceback.print_exc()
         QMessageBox.critical(main_window, "合并失败", f"合并出错: {e}")
