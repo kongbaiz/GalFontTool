@@ -46,7 +46,7 @@
 ### 安装步骤
 1. 克隆仓库：
    ```bash
-   git clone https://github.com/your-repo/GalFontTool.git
+   git clone https://github.com/SuQiandYing/GalFontTool.git
    cd GalFontTool
    ```
 
@@ -141,4 +141,5 @@ GalFontTool/
 ## 📝 贡献
 
 欢迎提交 Issue 和 Pull Request 来完善此工具！
+
 
