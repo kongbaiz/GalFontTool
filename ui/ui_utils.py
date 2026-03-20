@@ -304,7 +304,7 @@ def apply_theme(main_window, theme_name):
         if btn: btn.setStyleSheet(history_btn_style)
 
     for b in [main_window.btn_gen_font, main_window.btn_run_map, main_window.btn_run_subset, main_window.btn_checkup_map, main_window.btn_checkup_subset,
-              main_window.btn_preview_map, main_window.btn_run_coverage, main_window.btn_run_merge,
+              main_window.btn_preview_map, getattr(main_window, 'btn_restore_map', None), main_window.btn_run_coverage, main_window.btn_run_merge,
               main_window.btn_read_info, main_window.btn_save_info, main_window.btn_run_compare, main_window.btn_export_diff,
               main_window.btn_run_smart, getattr(main_window, 'btn_run_convert', None), getattr(main_window, 'btn_run_imgfont', None)]:
         if b: b.set_theme_color(t['accent'])
@@ -380,104 +380,83 @@ def set_help_content(main_window):
         h3 { color: #2196F3; margin-top: 12px; margin-bottom: 5px; font-family: 'Microsoft YaHei'; }
         h4 { color: #555; margin-bottom: 2px; font-weight: bold; }
         li { margin-bottom: 4px; color: #444; line-height: 140%; }
-        p { color: #666; line-height: 140%; }
+        p { color: #666; line-height: 140%; font-size: 13px; margin-top:2px; }
         code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-family: Consolas; }
-        .tip { background: #E3F2FD; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #2196F3; margin: 8px 0; }
-        .warn { background: #FFF3E0; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #FF9800; margin: 8px 0; }
+        .tip { background: #E3F2FD; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #2196F3; margin: 8px 0; font-size: 13px; }
+        .warn { background: #FFF3E0; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #FF9800; margin: 8px 0; font-size: 13px; }
     </style>
-    <h3 style='text-align:center; border-bottom: 1px solid #ddd; padding-bottom:10px;'>Galgame 字体工具箱 使用指南</h3>
+    <h3 style='text-align:center; border-bottom: 1px solid #ddd; padding-bottom:10px;'>Galgame 字体工具箱 完整使用指南</h3>
 
     <h3>快速入门</h3>
-    <p>本工具专为游戏翻译设计。核心工作流程：</p>
+    <p>本工具专为游戏本地化（汉化）设计。典型工作流：</p>
     <ol>
-        <li><b>扫描文本</b> - 在【映射表】功能中扫描翻译文本目录</li>
-        <li><b>生成映射</b> - 自动生成字符映射表 (JSON)</li>
-        <li><b>制作字体</b> - 选择模式1，生成伪装日文字体</li>
+        <li><b>扫描文本</b> - 在【映射表】功能中导入含中文的翻译文本目录。</li>
+        <li><b>生成映射</b> - 自动生成“原中文 -> 日文生僻字”的字符映射表 (JSON)。</li>
+        <li><b>制作伪装字体</b> - 主界面选择“模式1”，基于原版字体与生成的映射表，制作出能被游戏引擎正常读取的伪装日文字体。</li>
     </ol>
-    <div class='tip'>拖拽功能：所有输入框都支持直接拖拽文件或文件夹</div>
+    <div class='tip'>💡 拖拽功能：软件内所有路径输入框都支持直接拖拽文件或文件夹。</div>
 
     <h3>快捷键</h3>
     <ul>
-        <li><code>Ctrl+O</code> 打开字体文件</li>
-        <li><code>Ctrl+S</code> 保存当前预设</li>
-        <li><code>Ctrl+E</code> 导出完整配置 (.gft)</li>
-        <li><code>Ctrl+I</code> 导入配置文件</li>
-        <li><code>Ctrl+Z / Y</code> 撤销/重做</li>
-        <li><code>Ctrl+G</code> 生成字体</li>
-        <li><code>F5</code> 刷新字体预览</li>
-        <li><code>Ctrl+1~5</code> 快速切换标签页</li>
-        <li><code>Ctrl+H</code> 打开帮助页面</li>
+        <li><code>Ctrl+O</code> 打开主字体文件</li>
+        <li><code>Ctrl+S</code> 另存当前配置为 JSON 预设</li>
+        <li><code>Ctrl+E</code> 导出完整配置状态（包括界面状态）</li>
+        <li><code>Ctrl+I</code> 导入 JSON 或状态预设</li>
+        <li><code>Ctrl+Z / Y</code> 跨文本框的撤销/重做</li>
+        <li><code>Ctrl+G</code> 一键生成最终字体</li>
+        <li><code>F5</code> 刷新当前操作面板和预览选项</li>
+        <li><code>Ctrl+1~5</code> 快速切换主标签页</li>
     </ul>
 
-    <h3>处理模式说明</h3>
+    <h3>处理模式说明 (主界面左侧)</h3>
     <ul>
-        <li><b>模式1 - 日繁映射 (推荐)</b>：将简体字映射到日文字形位置，生成伪装日文字体</li>
-        <li><b>模式2 - 逆向映射</b>：反向操作，将日文字形映射回原位</li>
-        <li><b>模式3 - 仅伪装</b>：不改变字形，只修改字体元数据伪装成日文</li>
-        <li><b>模式4 - 繁转简</b>：使用 OpenCC 将繁体字形转换为简体</li>
-        <li><b>模式5 - 简转繁</b>：使用 OpenCC 将简体字形转换为繁体</li>
-    </ul>
-    <div class='tip'>翻译项目通常选择模式1，配合映射表使用</div>
-
-    <h3>左侧面板 - 核心设置</h3>
-    <ul>
-        <li><b>主字体</b>：游戏原版字体 (支持 .ttf/.otf)，点击下拉查看历史</li>
-        <li><b>补全字体</b>：当主字体缺字时自动补充 (推荐思源黑体)</li>
-        <li><b>码表 JSON</b>：映射表文件，由【映射表】功能自动生成</li>
-        <li><b>输出目录</b>：自定义保存位置，留空则与源文件同目录</li>
-        <li><b>输出文件名</b>：生成字体的文件名，必须以 .ttf 结尾</li>
-        <li><b>内部字体名</b>：字体元数据中的名称，游戏引擎读取用</li>
+        <li><b>模式1 - 日繁映射 (推荐)</b>：配合映射字典，将需要渲染的中文字符映射到日文字形的位置上，这是突破引擎日文编码限制的最常用手法。</li>
+        <li><b>模式2 - 逆向映射</b>：模式1的反操作。</li>
+        <li><b>模式3 - 仅伪装</b>：不改变内部字形排列，仅仅修改字体的外部文件头信息伪装成原版日文字体以通过游戏引擎的基础校验。</li>
+        <li><b>模式4 / 模式5</b>：自带繁简转换算法，一键对中文字体内的全部字形进行繁简 / 简繁转化。</li>
     </ul>
 
     <h3>右侧功能区详解</h3>
-    <h4>字体信息</h4>
-    <p>查看和编辑字体元数据 (名称、版权、设计师等)，双击表格单元格可修改</p>
+    <h4>ℹ️ 字体信息</h4>
+    <p>查看、编辑和提取字体元数据（字体名称、版本号、版权、设计师等），双击表格单元格直接修改参数去深度伪装，骗过部分严苛的引擎校验。</p>
     
-    <h4>映射表</h4>
-    <p>扫描翻译文本目录，自动生成字符映射关系。支持预览替换效果、检查缺字</p>
+    <h4>🔠 映射表</h4>
+    <p>核心翻译辅助功能组，主要包含：</p>
+    <ul>
+        <li><b>扫描/生成映射</b>：基于翻译文本抽出需要用到且不重复的所有汉字，生成供后续使用的字典映射表。</li>
+        <li><b>检查缺字</b>：结合目标字体检查翻译文本是否超出该字库渲染范围。</li>
+        <li><b>预览替换</b>：快速预览映射字典替换后的全乱码文本视觉效果。</li>
+        <li><b>还原文本</b>：支持将已被映射工具处理成乱码的外文文本，利用旧版 JSON 映射表逆向恢复为清晰的中文原文本。</li>
+    </ul>
     
-    <h4>分析对比</h4>
-    <p>对比两个字体的字符集差异，分析字体对各语言区块的覆盖率</p>
+    <h4>📊 分析对比</h4>
+    <p>交叉对比两个不同字体的字符集差异，分析字体对各语言区块（如基本汉字、中日扩展区、假名、符号等）的精准覆盖率，辅助选择底字库。</p>
     
-    <h4>精简瘦身</h4>
-    <p>删除未使用的字符，大幅减小字体体积 (20MB到2~5MB)</p>
+    <h4>✂️ 精简瘦身 (Subset)</h4>
+    <p>仅保留翻译文本中切实使用到的字符，删除所有的多余无用字形，大幅减小字体文件体积（一般可将几十MB缩减至两三MB以内，显著加快系统载入）。</p>
     
-    <h4>合并补字</h4>
-    <p>从其他字体复制缺失的字符。在"指定字符"框输入需要的字</p>
+    <h4>➕ 合并补字 & 智能补字</h4>
+    <p>当主游戏字体缺字时，自动在补全字体（如思源黑体）中抽取字形拼接到主字体中。智能补字更支持自动分析本地系统字库来源，一键推荐并补全所有缺失的罕见汉字。</p>
     
-    <h4>图片字库</h4>
-    <p>生成 PNG/WebP/TGA/BMP/BMFont 等格式的图片字库</p>
+    <h4>🖼️ 图片字库 (ImgFont)</h4>
+    <p>游戏 UI 设计和古董引擎利器。一键将矢量字体散列并生成 PNG / WebP / TGA / BMP 及 BMFont 格式的等宽、纹理图片字库集合。</p>
     
-    <h4>Web转换</h4>
-    <p>转换为 WOFF2 格式，压缩率可达 40-70%，适用于 H5 游戏</p>
+    <h4>🌐 Web转换</h4>
+    <p>将传统的 TTF / OTF 字体直接转换为网页友好的 WOFF2 格式，实现极限体积压缩，极其适合浏览器和 Web H5 环境的引擎移植（如各种网页端运行的 Galgame 或 RPG Maker MV）。</p>
     
-    <h4>度量修复</h4>
-    <p>调整字体的宽高比、间距、垂直度量，解决文字偏移/截断问题</p>
+    <h4>📐 度量修复</h4>
+    <p>可以手动或全自动调整字体的宽高比界限、行距 (Ascender/Descender/LineGap) 等垂直度量。能彻底解决汉化后文字在对话框UI中偏上偏下、出界或被莫名截断显示不全的顽疾。</p>
     
-    <h4>兼容清理</h4>
-    <p>移除高级 OpenType 特性，提高老引擎兼容性</p>
-    
-    <h4>智能补字</h4>
-    <p>扫描字体库，自动查找包含缺失字符的字体来源</p>
+    <h4>🧹 兼容清理</h4>
+    <p>物理移除字体中现代的高级 OpenType 渲染特性表（如GSUB/GPOS/hdmx/vdmx等），极大提高底边古老游戏引擎或自研引擎对魔改字体的兼容性，有效防止文字渲染系统崩溃或卡死。</p>
 
-    <h3>常见问题</h3>
-    <div class='warn'><b>文字显示不全</b>：使用精简前确保扫描所有文本；或使用【合并补字】添加缺失字符</div>
-    <div class='warn'><b>文字位置偏移</b>：使用【度量修复】，点击"自动计算"按钮对齐原版字体度量</div>
-    <div class='warn'><b>游戏崩溃</b>：使用【兼容清理】移除高级特性 (GSUB/GPOS/hdmx等)</div>
-    <div class='warn'><b>OTF 不支持</b>：工具会自动转换 OTF 到 TTF，无需手动处理</div>
-
-    <h3>推荐工作流</h3>
-    <ol>
-        <li>准备翻译文本目录和原版日文字体</li>
-        <li>【映射表】扫描文本、生成映射、检查缺字</li>
-        <li>如有缺字，使用【合并补字】或【智能补字】补全</li>
-        <li>【生成字体】选择模式1，点击生成</li>
-        <li>【度量修复】加载参考字体，自动计算，执行修复</li>
-        <li>测试游戏效果</li>
-    </ol>
+    <h3>常见问题 FAQ</h3>
+    <div class='warn'>❓ <b>文字显示变成了方块或问号？</b><br>缺字现象。请在【映射表】模块中使用“检查缺字”功能排查。如果是使用了精简功能，确保你扫描了<b>所有</b>会显示在屏幕上的文本和系统 UI 词条！</div>
+    <div class='warn'>❓ <b>文字位置总是偏上/偏下对不齐？</b><br>这是中日字体度量差异造成的。使用【度量修复】功能，选择原版游戏罗马音字体作为“标杆指标”，点击“自动计算”来硬对齐原版游戏字体的高度标准即可。</div>
+    <div class='warn'>❓ <b>替换字体后游戏直接闪退？</b><br>极大概率是游戏原生引擎不识别高级字体特性表。尝试并在最后一步对其进行【兼容清理】，勾选“暴力清除所有高级特性表”。同时对于只支持 TTF 的老游戏，确保不要喂给它们 OTF 格式的改版字体（遇到 OTF 本工具已默认自动转为 TTF 处理）。</div>
 
     <p style='text-align:center; font-size:11px; color:#999; margin-top:20px;'>
-        所有输入框支持拖拽 | 自动保存设置 | 记录最近文件
+        所有输入框支持拖拽 | 工具自动保存操作状态 | 本指南随时更新 | 祝工作顺利！✨
     </p>
     """
     main_window.help_browser.setHtml(html)
