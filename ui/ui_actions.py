@@ -991,6 +991,15 @@ def do_gen_map(main_window):
     }
     main_window.run_worker('map', conf)
 
+def do_restore_map(main_window):
+    conf = {
+        'src_dir': main_window.map_src.text(),
+        'out_dir': main_window.map_out.text(),
+        'out_json': main_window.map_json.text(),
+        'exts': main_window.map_ext.text()
+    }
+    main_window.run_worker('restore_map', conf)
+
 def do_preview_mapping(main_window):
     json_path = main_window.in_json.text()
     txt_dir = main_window.map_src.text()

@@ -187,6 +187,7 @@ class GalFontTool(QMainWindow):
         self.do_gen_bmp = lambda: ui_actions.do_gen_bmp(self)
         self.do_gen_imgfont = lambda: ui_actions.do_gen_imgfont(self)
         self.do_gen_map = lambda: ui_actions.do_gen_map(self)
+        self.do_restore_map = lambda: ui_actions.do_restore_map(self)
         self.do_preview_mapping = lambda: ui_actions.do_preview_mapping(self)
         self.do_convert_format = lambda: ui_actions.do_convert_format(self)
         self.do_export_config = lambda: ui_actions.do_export_config(self)

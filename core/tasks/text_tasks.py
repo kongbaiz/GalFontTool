@@ -352,3 +352,109 @@ def smart_fallback_scan(conf, log_signal, prog_signal):
     log_signal(f"   ❌ 仍缺失: {len(unfound_chars)} 个")
     
     return final_map
+
+def restore_mapping(conf, log_signal, prog_signal):
+    src_dir = conf['src_dir']
+    out_dir = conf['out_dir']
+    out_json = conf['out_json']
+    exts = conf['exts'].split(';')
+
+    if not os.path.exists(src_dir):
+        log_signal("❌ 输入目录不存在！")
+        return None
+    if not os.path.exists(out_json):
+        log_signal("❌ 映射表(JSON)文件不存在！请检查。")
+        return None
+
+    log_signal(f"🔄 <b>开始逆向还原文本...</b>")
+    log_signal(f"   输入目录: {src_dir}")
+    log_signal(f"   输出目录: {out_dir}")
+    log_signal(f"   码表文件: {out_json}")
+    prog_signal(5)
+
+    try:
+        with open(out_json, 'r', encoding='utf-8') as f:
+            mapping_dict = json.load(f)
+    except Exception as e:
+        log_signal(f"❌ 读取映射表失败: {e}")
+        return None
+
+    reverse_map = {v: k for k, v in mapping_dict.items()}
+    log_signal(f"✅ 加载了 {len(reverse_map)} 条映射规则")
+    prog_signal(15)
+
+    all_files = []
+    for ext in exts:
+        ext = ext.strip()
+        if not ext: continue
+        if not ext.startswith('.'): ext = '.' + ext
+        all_files.extend(glob.glob(os.path.join(src_dir, '**', f'*{ext}'), recursive=True))
+
+    if not all_files:
+        log_signal("⚠️ 在输入目录中未找到任何匹配的文件。")
+        return None
+
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    def recursive_restore(obj, mapper):
+        if isinstance(obj, str):
+            return "".join([mapper.get(c, c) for c in obj])
+        elif isinstance(obj, list):
+            return [recursive_restore(i, mapper) for i in obj]
+        elif isinstance(obj, dict):
+            return {k: recursive_restore(v, mapper) for k, v in obj.items()}
+        else:
+            return obj
+
+    total_files = len(all_files)
+    processed_count = 0
+
+    def read_text_file(path):
+        encodings = ['utf-8', 'cp932', 'gbk', 'utf-8-sig', 'utf-16']
+        for enc in encodings:
+            try:
+                with open(path, 'r', encoding=enc) as f:
+                    return f.read(), enc
+            except UnicodeDecodeError:
+                continue
+        with open(path, 'r', encoding='utf-8', errors='replace') as f:
+            return f.read(), 'utf-8'
+
+    for idx, fpath in enumerate(all_files):
+        try:
+            rel_path = os.path.relpath(fpath, src_dir)
+            target_path = os.path.join(out_dir, rel_path)
+            target_folder = os.path.dirname(target_path)
+
+            if not os.path.exists(target_folder):
+                os.makedirs(target_folder)
+
+            if fpath.lower().endswith('.json'):
+                content, enc = read_text_file(fpath)
+                try:
+                    data = json.loads(content)
+                    new_data = recursive_restore(data, reverse_map)
+                    with open(target_path, 'w', encoding='utf-8') as f:
+                        json.dump(new_data, f, ensure_ascii=False, indent=2)
+                except Exception as e:
+                    log_signal(f"⚠️ JSON解析失败 ({os.path.basename(fpath)})，作为纯文本处理。")
+                    new_content = "".join([reverse_map.get(c, c) for c in content])
+                    with open(target_path, 'w', encoding='utf-8') as f:
+                        f.write(new_content)
+            else:
+                content, enc = read_text_file(fpath)
+                new_content = "".join([reverse_map.get(c, c) for c in content])
+                with open(target_path, 'w', encoding='utf-8') as f:
+                    f.write(new_content)
+
+            processed_count += 1
+        except Exception as e:
+            log_signal(f"⚠️ 处理失败 {os.path.basename(fpath)}: {e}")
+
+        if idx % 50 == 0:
+            prog_signal(15 + int(85 * idx / total_files))
+
+    prog_signal(100)
+    log_signal(f"🎉 <b>还原完成！</b><br>已处理文件: {processed_count}<br>输出目录: {out_dir}")
+    return out_dir

@@ -276,10 +276,13 @@ def setup_mapping_manager_ui(main_window, parent_widget):
     main_window.btn_checkup_map.clicked.connect(lambda: main_window.do_checkup('map'))
     main_window.btn_preview_map = IOSButton("预览替换")
     main_window.btn_preview_map.clicked.connect(main_window.do_preview_mapping)
+    main_window.btn_restore_map = IOSButton("还原文本")
+    main_window.btn_restore_map.clicked.connect(main_window.do_restore_map)
     l_map.addStretch()
     btn_row_map = QHBoxLayout()
     btn_row_map.addWidget(main_window.btn_run_map)
     btn_row_map.addWidget(main_window.btn_preview_map)
+    btn_row_map.addWidget(main_window.btn_restore_map)
     btn_row_map.addWidget(main_window.btn_checkup_map)
     l_map.addLayout(btn_row_map)
     

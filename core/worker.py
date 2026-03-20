@@ -39,6 +39,8 @@ class Worker(QThread):
             
             elif self.task == "map":
                 result = text_tasks.gen_mapping(self.c, log_func, prog_func)
+            elif self.task == "restore_map":
+                result = text_tasks.restore_mapping(self.c, log_func, prog_func)
             elif self.task == "smart_fallback":
                 result = text_tasks.smart_fallback_scan(self.c, log_func, prog_func)
             
