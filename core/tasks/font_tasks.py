@@ -220,6 +220,8 @@ def build_font(conf, log_signal, prog_signal):
         log_signal(f"   ✓ 已注入 Charset {charset_val} (Bit {bit})")
     except Exception as e:
         log_signal(f"   ⚠️ 注入失败: {e}")
+        if hasattr(font, 'tables') and 'OS/2' in font.tables:
+            del font.tables['OS/2']
 
     if output_dir and os.path.isdir(output_dir):
         out_path = os.path.join(output_dir, out_name)
