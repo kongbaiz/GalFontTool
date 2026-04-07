@@ -302,15 +302,15 @@ def apply_theme(main_window, theme_name):
     for combo in main_window.findChildren(QComboBox):
         combo.setStyleSheet(combo_style)
 
-    from PySide6.QtWidgets import QStyleFactory
-    native_style = QStyleFactory.create("windowsvista") or QStyleFactory.create("windows")
     for chk_name in ('chk_lock_file_name', 'chk_lock_font_name'):
         chk = getattr(main_window, chk_name, None)
         if chk:
-            if native_style:
-                chk.setProperty("_native_style", native_style)
-                chk.setStyle(native_style)
-            chk.setStyleSheet("")
+            chk.set_theme(
+                t['accent'],
+                "#EEF2F5",
+                t['border'],
+                "#A8C2D4"
+            )
 
     text_style = (
         "QTextEdit {"

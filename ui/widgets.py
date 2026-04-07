@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QPushButton, QFrame, QLineEdit, QTextEdit
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import Qt, QUrl, QSize
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDesktopServices, QColor
 
 
@@ -122,4 +122,51 @@ class IOSLog(QTextEdit):
             f"padding: 6px;"
             f"}}"
             f"{scrollbar_style}"
+        )
+
+
+class LockToggle(QPushButton):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setCheckable(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setFixedSize(50, 28)
+        self._accent = "#3A6784"
+        self._track_off = "#EEF2F5"
+        self._border = "#CAD3DC"
+        self._focus = "#9DB7CA"
+        self.toggled.connect(lambda _: self.update_style())
+        self.update_style()
+
+    def sizeHint(self):
+        return QSize(50, 28)
+
+    def set_theme(self, accent, track_off, border, focus):
+        self._accent = accent
+        self._track_off = track_off
+        self._border = border
+        self._focus = focus
+        self.update_style()
+
+    def update_style(self):
+        checked_bg = self._accent
+        checked_border = QColor(self._accent).darker(112).name()
+        self.setText("锁定" if self.isChecked() else "跟随")
+        self.setStyleSheet(
+            "QPushButton {"
+            f"background-color: {self._track_off};"
+            "color: #586776;"
+            f"border: 1px solid {self._border};"
+            "border-radius: 6px;"
+            "padding: 0 8px;"
+            "font-size: 12px;"
+            "font-weight: 600;"
+            "text-align: center;"
+            "}"
+            "QPushButton:hover { background-color: #E7EDF2; }"
+            f"QPushButton:checked {{ background-color: {checked_bg}; color: #FFFFFF; border: 1px solid {checked_border}; }}"
+            f"QPushButton:checked:hover {{ background-color: {QColor(self._accent).darker(108).name()}; }}"
+            f"QPushButton:focus {{ border: 1px solid {self._focus}; }}"
+            "QPushButton:disabled { background-color: #F2F5F7; color: #98A3AD; border-color: #D9E0E6; }"
         )

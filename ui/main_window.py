@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt, QSettings
 from PySide6.QtGui import QFont, QShortcut, QKeySequence
 
 from config import THEMES
-from .widgets import IOSCard, IOSInput, IOSLog, IOSButton
+from .widgets import IOSCard, IOSInput, IOSLog, IOSButton, LockToggle
 
 from . import ui_setup
 from . import ui_actions
@@ -275,11 +275,10 @@ class GalFontTool(QMainWindow):
         self.combo_charset.setToolTip("注入到字体的代码页标识 (ulCodePageRange)。\n游戏引擎通常根据此标志识别字体语言。")
         self.combo_charset.setMinimumHeight(34)
         
-        from PySide6.QtWidgets import QCheckBox
-        self.chk_lock_file_name = QCheckBox(""); self.chk_lock_file_name.setFixedSize(30, 30); self.chk_lock_file_name.setObjectName("lockFileToggle"); self.chk_lock_file_name.setToolTip("锁定输出文件名，不随主字体变化")
-        self.chk_lock_font_name = QCheckBox(""); self.chk_lock_font_name.setFixedSize(30, 30); self.chk_lock_font_name.setObjectName("lockFontToggle"); self.chk_lock_font_name.setToolTip("锁定内部字体名，不随主字体变化")
-        file_name_row = QHBoxLayout(); file_name_row.addWidget(self.in_file_name); file_name_row.addWidget(self.chk_lock_file_name)
-        font_name_row = QHBoxLayout(); font_name_row.addWidget(self.in_font_name); font_name_row.addWidget(self.chk_lock_font_name)
+        self.chk_lock_file_name = LockToggle(); self.chk_lock_file_name.setObjectName("lockFileToggle"); self.chk_lock_file_name.setToolTip("锁定输出文件名，不随主字体变化")
+        self.chk_lock_font_name = LockToggle(); self.chk_lock_font_name.setObjectName("lockFontToggle"); self.chk_lock_font_name.setToolTip("锁定内部字体名，不随主字体变化")
+        file_name_row = QHBoxLayout(); file_name_row.setSpacing(8); file_name_row.addWidget(self.in_file_name); file_name_row.addWidget(self.chk_lock_file_name, 0, Qt.AlignmentFlag.AlignVCenter)
+        font_name_row = QHBoxLayout(); font_name_row.setSpacing(8); font_name_row.addWidget(self.in_font_name); font_name_row.addWidget(self.chk_lock_font_name, 0, Qt.AlignmentFlag.AlignVCenter)
         f_conf_l.addWidget(QLabel("输出文件名:"), 0, 0); f_conf_l.addLayout(file_name_row, 0, 1)
         f_conf_l.addWidget(QLabel("内部字体名:"), 1, 0); f_conf_l.addLayout(font_name_row, 1, 1)
         out_dir_row = QHBoxLayout(); out_dir_row.addWidget(self.in_output_dir); out_dir_row.addWidget(self.btn_output_dir)
