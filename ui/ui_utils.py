@@ -1,7 +1,7 @@
 import os
 import json
-from PyQt6.QtWidgets import QFileDialog, QMessageBox, QLabel, QHBoxLayout, QPushButton
-from PyQt6.QtGui import QColor, QFont, QFontDatabase
+from PySide6.QtWidgets import QFileDialog, QMessageBox, QLabel, QHBoxLayout, QPushButton, QComboBox, QTextEdit, QTableWidget
+from PySide6.QtGui import QFont, QFontDatabase
 from config import THEMES
 from core.worker import Worker
 
@@ -36,7 +36,7 @@ def reset_to_default(main_window):
         main_window.in_font_name.setText("My Game Font")
         main_window.combo_mode.setCurrentIndex(0)
         main_window.combo_charset.setCurrentIndex(0)
-        main_window.apply_theme("🌊 深海 (Ocean)")
+        main_window.apply_theme("简约蓝 (Clean)")
         main_window.log_area.clear()
         main_window.log_area.append("✅ 已恢复默认设置。")
 
@@ -112,7 +112,7 @@ def set_ui_busy(main_window, busy):
     main_window.left_card.setEnabled(not busy)
     main_window.right_card.setEnabled(not busy)
     main_window.progress.setValue(0 if busy else 100)
-    main_window.lbl_status.setText("正在处理..." if busy else "就绪")
+    main_window.statusBar().showMessage("正在处理..." if busy else "就绪")
 
 def on_worker_done(main_window, result):
     if result and isinstance(result, str):
@@ -121,14 +121,14 @@ def on_worker_done(main_window, result):
             main_window.pic_font.setText(result)
             main_window.tga_font.setText(result)
             main_window.bmp_font.setText(result)
-            main_window.lbl_status.setText("字体已就绪")
+            main_window.statusBar().showMessage("字体已就绪")
             family = main_window.load_font_for_preview(result)
             if family:
                 main_window.generated_font_family = family
                 main_window.update_previews()
         elif result.endswith('.json'):
             main_window.in_json.setText(result)
-            main_window.lbl_status.setText("映射表就绪")
+            main_window.statusBar().showMessage("映射表就绪")
     
     if hasattr(main_window, 'update_history_buttons'):
         main_window.update_history_buttons()
@@ -153,7 +153,7 @@ def load_settings(main_window):
         main_window.in_output_dir.setText(main_window.settings.value("output_dir", ""))
     main_window.combo_mode.setCurrentIndex(int(main_window.settings.value("mode", 0)))
     main_window.combo_charset.setCurrentIndex(int(main_window.settings.value("charset", 0)))
-    main_window.current_theme_name = main_window.settings.value("theme", "🌊 深海 (Ocean)")
+    main_window.current_theme_name = main_window.settings.value("theme", "简约蓝 (Clean)")
     idx = main_window.combo_theme.findText(main_window.current_theme_name)
     if idx >= 0: main_window.combo_theme.setCurrentIndex(idx)
     if hasattr(main_window, 'load_recent_files'):
@@ -221,242 +221,185 @@ def create_file_row(main_window, inp, btn):
     l.addWidget(btn)
     return l
 
-def get_scrollbar_style(main_window, accent):
-    return f"""
-        QScrollBar:vertical {{ border: none; background: rgba(0, 0, 0, 0.05); width: 8px; margin: 0px; border-radius: 4px; }}
-        QScrollBar::handle:vertical {{ background: {accent}; min-height: 20px; border-radius: 4px; }}
-        QScrollBar::handle:vertical:hover {{ background: {QColor(accent).darker(110).name()}; }}
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0px; }}
-        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{ background: none; }}
-        QScrollBar:horizontal {{ border: none; background: rgba(0, 0, 0, 0.05); height: 8px; margin: 0px; border-radius: 4px; }}
-        QScrollBar::handle:horizontal {{ background: {accent}; min-width: 20px; border-radius: 4px; }}
-        QScrollBar::handle:horizontal:hover {{ background: {QColor(accent).darker(110).name()}; }}
-        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0px; }}
-        QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{ background: none; }}
-    """
+def clear_widget_styles(main_window):
+    if hasattr(main_window, 'centralWidget') and main_window.centralWidget():
+        main_window.centralWidget().setStyleSheet("")
+
+
+def get_scrollbar_style():
+    return (
+        "QScrollBar:vertical { background: transparent; width: 10px; margin: 2px 1px 2px 1px; }"
+        "QScrollBar::handle:vertical { background: #AEBBC7; min-height: 26px; border-radius: 5px; }"
+        "QScrollBar::handle:vertical:hover { background: #93A4B3; }"
+        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }"
+        "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }"
+        "QScrollBar:horizontal { background: transparent; height: 10px; margin: 1px 2px 1px 2px; }"
+        "QScrollBar::handle:horizontal { background: #AEBBC7; min-width: 26px; border-radius: 5px; }"
+        "QScrollBar::handle:horizontal:hover { background: #93A4B3; }"
+        "QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }"
+        "QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { background: transparent; }"
+    )
 
 def apply_theme(main_window, theme_name):
-    if theme_name not in THEMES: return
-    main_window.current_theme_name = theme_name
-    main_window.theme = THEMES[theme_name]
+    if theme_name in THEMES:
+        main_window.current_theme_name = theme_name
+        main_window.theme = THEMES[theme_name]
     t = main_window.theme
-    main_window.update()
 
-    labels_to_color = [
-        main_window.title_label,
-        main_window.lbl_map, main_window.lbl_ed, main_window.lbl_sub,
-        main_window.lbl_cov, main_window.lbl_merge, main_window.lbl_info, main_window.lbl_cmp,
-        getattr(main_window, 'lbl_sf', None), getattr(main_window, 'lbl_woff2', None),
-        getattr(main_window, 'lbl_clean', None), getattr(main_window, 'lbl_imgfont', None),
-        getattr(main_window, 'lbl_fix', None), getattr(main_window, 'lbl_conv', None)
-    ]
+    clear_widget_styles(main_window)
 
-    for l in labels_to_color:
-        if l: 
-            try:
-                l.setStyleSheet(f"color: {t['text_main']}; padding-left: 5px;")
-            except RuntimeError:
-                pass
+    if main_window.centralWidget():
+        main_window.centralWidget().setStyleSheet(
+            "QWidget { background-color: #E9EEF2; color: #2B3844; }"
+        )
 
-    for l in [main_window.lbl_theme, main_window.lbl_src, main_window.lbl_font_conf, main_window.lbl_status]: l.setStyleSheet(f"color: {t['text_dim']}; font-weight:bold; font-size:12px; font-family:'Microsoft YaHei';")
+    sb_style = get_scrollbar_style()
 
-    if hasattr(main_window, 'preview_labels'):
-        for label in main_window.preview_labels:
-            label.setStyleSheet(f"color: {t['text_dim']}; font-family:'Microsoft YaHei'; font-weight:bold; font-size:12px;")
+    if hasattr(main_window, 'left_card'):
+        main_window.left_card.update_theme(t['card_bg'], t['border'])
+    if hasattr(main_window, 'right_card'):
+        main_window.right_card.update_theme(t['card_bg'], t['border'])
 
-    for btn in [main_window.btn_min, main_window.btn_max, main_window.btn_close]: btn.update_icon_color(t['text_main'])
+    for i in main_window.findChildren(main_window.IOSInput):
+        i.update_theme(t['input_bg'], t['input_focus'], t['accent'], t['text_main'])
 
-    main_window.left_card.update_theme(t['card_bg'], t['border'])
-    main_window.right_card.update_theme(t['card_bg'], t['border'])
+    label_style = "color: #33424F; background: transparent; border: none;"
+    for lbl in main_window.findChildren(QLabel):
+        lbl.setStyleSheet(label_style)
 
-    all_inputs = main_window.findChildren(main_window.IOSInput)
-    for i in all_inputs: i.update_theme(t['input_bg'], t['input_focus'], t['accent'], t['text_main'])
-
-    folder_btn_style = f"""
-        QPushButton {{
-            background-color: {t['input_bg']};
-            color: {t['text_main']};
-            border-radius: 8px;
-            border: 1px solid {t['border']};
-            font-size: 14px;
-            padding: 4px;
-        }}
-        QPushButton:hover {{
-            background-color: {t['accent']};
-            color: white;
-            border: none;
-        }}
-        QPushButton:disabled {{
-            background-color: rgba(0,0,0,0.1);
-            color: rgba(0,0,0,0.3);
-        }}
-    """
-    
-    from PyQt6.QtWidgets import QPushButton
+    button_style = (
+        "QPushButton {"
+        "background-color: #F6F8FA;"
+        "color: #2D3A46;"
+        "border: 1px solid #C9D2DB;"
+        "border-radius: 5px;"
+        "padding: 5px 10px;"
+        "}"
+        "QPushButton:hover { background-color: #EEF2F5; }"
+        "QPushButton:pressed { background-color: #E6ECF1; }"
+        "QPushButton:disabled { color: #8B949E; background-color: #F2F5F7; border-color: #D9E0E6; }"
+    )
     for btn in main_window.findChildren(QPushButton):
-        if btn.text() == "📁":
-            btn.setStyleSheet(folder_btn_style)
+        if btn in getattr(main_window, 'tabs', []):
+            continue
+        if isinstance(btn, main_window.__class__.IOSInput):
+            continue
+        btn.setStyleSheet(button_style)
 
-    main_window.btn_reset.setStyleSheet(f"QPushButton {{background-color: transparent; color: {t['text_dim']}; border: 1px dashed {t['text_dim']}; border-radius: 5px;}} QPushButton:hover {{background-color: {t['accent']}; color: white; border:none;}}")
+    combo_style = (
+        "QComboBox {"
+        "background-color: #FFFFFF;"
+        "color: #2E3B47;"
+        "border: 1px solid #C9D2DB;"
+        "border-radius: 5px;"
+        "padding: 3px 8px;"
+        "}"
+        "QComboBox:focus { border-color: #6C7F90; background-color: #F8FBFD; }"
+        "QComboBox::drop-down { border: none; width: 24px; }"
+        "QComboBox QAbstractItemView { border: 1px solid #C9D2DB; background: #FFFFFF; selection-background-color: #EAF1F6; selection-color: #23303C; }"
+        f"{sb_style}"
+    )
+    for combo in main_window.findChildren(QComboBox):
+        combo.setStyleSheet(combo_style)
 
-    history_btn_style = f"QPushButton {{background-color: rgba(255,255,255,0.6); color: {t['text_main']}; border-radius: 5px; border: 1px solid rgba(128,128,128,0.2); font-size: 12px; padding: 2px 8px;}} QPushButton:hover {{background-color: {t['accent']}; color: white;}} QPushButton:disabled {{background-color: rgba(0,0,0,0.05); color: rgba(0,0,0,0.3); border-color: transparent;}}"
-    for btn in [main_window.btn_undo, main_window.btn_redo, main_window.btn_history]:
-        if btn: btn.setStyleSheet(history_btn_style)
+    from PySide6.QtWidgets import QStyleFactory
+    native_style = QStyleFactory.create("windowsvista") or QStyleFactory.create("windows")
+    for chk_name in ('chk_lock_file_name', 'chk_lock_font_name'):
+        chk = getattr(main_window, chk_name, None)
+        if chk:
+            if native_style:
+                chk.setProperty("_native_style", native_style)
+                chk.setStyle(native_style)
+            chk.setStyleSheet("")
 
-    for b in [main_window.btn_gen_font, main_window.btn_run_map, main_window.btn_run_subset, main_window.btn_checkup_map, main_window.btn_checkup_subset,
-              main_window.btn_preview_map, getattr(main_window, 'btn_restore_map', None), main_window.btn_run_coverage, main_window.btn_run_merge,
-              main_window.btn_read_info, main_window.btn_save_info, main_window.btn_run_compare, main_window.btn_export_diff,
-              main_window.btn_run_smart, getattr(main_window, 'btn_run_convert', None), getattr(main_window, 'btn_run_imgfont', None)]:
-        if b: b.set_theme_color(t['accent'])
-    
-    sb_style = get_scrollbar_style(main_window, t['accent'])
-    combo_style = f"""
-        QComboBox {{ 
-            border: 1px solid rgba(128,128,128,0.2); 
-            border-radius: 10px; 
-            padding: 0 10px; 
-            background: {t['input_bg']}; 
-            color: {t['text_main']}; 
-            height: 38px;
-            font-size: 13px;
-        }}
-        QComboBox:focus {{
-            border: 1px solid {t['accent']};
-            background-color: {t['input_focus']};
-        }}
-        QComboBox::drop-down {{ 
-            border: none; 
-            width: 30px;
-        }}
-        QComboBox::down-arrow {{
-            image: none;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-top: 5px solid {t['text_dim']};
-            margin-right: 10px;
-        }}
-        QComboBox QAbstractItemView {{ 
-            background: {t['card_bg']}; 
-            selection-background-color: {t['accent']}; 
-            color: {t['text_main']}; 
-            border: 1px solid rgba(128,128,128,0.2);
-            border-radius: 8px;
-            outline: none;
-        }}
-        {sb_style}
-    """
-    main_window.combo_theme.setStyleSheet(combo_style)
-    main_window.combo_mode.setStyleSheet(combo_style)
-    main_window.combo_charset.setStyleSheet(combo_style)
-    main_window.tab_container.setStyleSheet(f"background: {t['input_bg']}; border-radius: 15px;")
-    main_window.tab_scroll_area.setStyleSheet(f"QScrollArea {{ background: transparent; border: none; }} {sb_style}")
+    text_style = (
+        "QTextEdit {"
+        "background-color: #FFFFFF;"
+        "color: #2E3B47;"
+        "border: 1px solid #D8E0E7;"
+        "border-radius: 5px;"
+        "}"
+        f"{sb_style}"
+    )
+    for te in main_window.findChildren(QTextEdit):
+        te.setStyleSheet(text_style)
+    for table in main_window.findChildren(QTableWidget):
+        table.setStyleSheet(
+            "QTableWidget { background-color: #FFFFFF; border: 1px solid #D8E0E7; gridline-color: #E8EDF2; selection-background-color: #EAF1F6; selection-color: #23303C; }"
+            "QHeaderView::section { background-color: #F7F9FB; color: #33424F; border: none; border-bottom: 1px solid #E0E6EC; padding: 5px; }"
+            f"{sb_style}"
+        )
+
+    for b in [
+        getattr(main_window, 'btn_gen_font', None),
+        getattr(main_window, 'btn_run_map', None),
+        getattr(main_window, 'btn_checkup_map', None),
+        getattr(main_window, 'btn_preview_map', None),
+        getattr(main_window, 'btn_restore_map', None),
+        getattr(main_window, 'btn_run_subset', None),
+        getattr(main_window, 'btn_checkup_subset', None),
+        getattr(main_window, 'btn_run_merge', None),
+        getattr(main_window, 'btn_run_compare', None),
+        getattr(main_window, 'btn_export_diff', None),
+        getattr(main_window, 'btn_run_coverage', None),
+        getattr(main_window, 'btn_run_imgfont', None),
+        getattr(main_window, 'btn_run_woff2', None),
+        getattr(main_window, 'btn_run_clean', None),
+        getattr(main_window, 'btn_do_fix', None),
+        getattr(main_window, 'btn_read_info', None),
+        getattr(main_window, 'btn_save_info', None),
+        getattr(main_window, 'btn_run_smart', None),
+    ]:
+        if b:
+            b.set_theme_color(t['accent'])
+
+    main_window.progress.setStyleSheet(
+        "QProgressBar { background-color: #E8EDF1; border: 1px solid #D0D8E0; border-radius: 3px; }"
+        f"QProgressBar::chunk {{ background-color: {t['accent']}; border-radius: 2px; }}"
+    )
+    main_window.log_area.update_theme(t['text_main'], "#FCFDFE", sb_style)
+    main_window.statusBar().setStyleSheet(
+        "QStatusBar { background-color: #F5F8FA; color: #42505D; border-top: 1px solid #D7DFE6; }"
+    )
     main_window.switch_tab(main_window.stack.currentIndex())
-    bg_log = "rgba(255,255,255,0.1)" if "Night" in theme_name else "rgba(0,0,0,0.03)"
-    main_window.log_area.update_theme(t['text_main'], bg_log, sb_style)
-    main_window.progress.setStyleSheet(f"QProgressBar {{border:none; background:rgba(0,0,0,0.1); border-radius:3px;}} QProgressBar::chunk {{background: {t['accent']}; border-radius:3px;}}")
-    main_window.help_browser.setStyleSheet(f"QTextEdit {{ background: transparent; border: none; font-size: 13px; line-height: 150%; color: {t['text_main']}; }} {sb_style}")
-    if hasattr(main_window, 'preview_area'):
-        main_window.preview_area.setStyleSheet(f"QTextEdit {{ background-color: {t['input_bg']}; border-radius: 8px; border: 1px solid rgba(128,128,128,0.2); color: {t['text_main']}; padding: 2px; }} {sb_style}")
-    common_te_style = f"QTextEdit {{ background: rgba(0,0,0,0.03); border-radius: 8px; padding: 10px; font-family: 'Consolas', monospace; color: {t['text_main']}; }} {sb_style}"
-    if hasattr(main_window, 'cov_result'): main_window.cov_result.setStyleSheet(common_te_style)
-    if hasattr(main_window, 'info_display'): main_window.info_display.setStyleSheet(common_te_style)
-    if hasattr(main_window, 'cmp_result'): main_window.cmp_result.setStyleSheet(common_te_style)
-    if hasattr(main_window, 'map_table'):
-         main_window.map_table.setStyleSheet(f"QTableWidget {{ background-color: {t['input_bg']}; color: {t['text_main']}; border: none; }} {sb_style}")
-    if hasattr(main_window, 'sf_table'):
-         main_window.sf_table.setStyleSheet(f"QTableWidget {{ background-color: {t['input_bg']}; color: {t['text_main']}; border: none; }} {sb_style}")
 
 def switch_tab(main_window, idx):
     main_window.stack.setCurrentIndex(idx)
-    t = main_window.theme
-    base = "border:none; border-radius: 12px; font-weight: bold; font-family: 'Microsoft YaHei';"
-    active = f"{base} background-color: {t['accent']}; color: white;"
-    inactive = f"{base} background-color: transparent; color: {t['text_dim']};"
-    for i, b in enumerate(main_window.tabs): b.setChecked(i == idx); b.setStyleSheet(active if i == idx else inactive)
+    for i, b in enumerate(main_window.tabs):
+        b.setChecked(i == idx)
+        if i == idx:
+            b.setStyleSheet(
+                "QPushButton { background-color: #DEE8F0; color: #1F2D3A; border: 1px solid #B7C5D3; border-radius: 5px; padding: 5px 8px; font-weight: bold; }"
+            )
+        else:
+            b.setStyleSheet(
+                "QPushButton { background-color: #F6F8FA; color: #3A4855; border: 1px solid #CAD3DC; border-radius: 5px; padding: 5px 8px; }"
+                "QPushButton:hover { background-color: #EEF2F5; }"
+            )
+    if hasattr(main_window, 'quick_nav') and main_window.quick_nav.currentIndex() != idx:
+        main_window.quick_nav.blockSignals(True)
+        main_window.quick_nav.setCurrentIndex(idx)
+        main_window.quick_nav.blockSignals(False)
 
 def set_help_content(main_window):
-    html = """
-    <style>
-        h3 { color: #2196F3; margin-top: 12px; margin-bottom: 5px; font-family: 'Microsoft YaHei'; }
-        h4 { color: #555; margin-bottom: 2px; font-weight: bold; }
-        li { margin-bottom: 4px; color: #444; line-height: 140%; }
-        p { color: #666; line-height: 140%; font-size: 13px; margin-top:2px; }
-        code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-family: Consolas; }
-        .tip { background: #E3F2FD; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #2196F3; margin: 8px 0; font-size: 13px; }
-        .warn { background: #FFF3E0; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #FF9800; margin: 8px 0; font-size: 13px; }
-    </style>
-    <h3 style='text-align:center; border-bottom: 1px solid #ddd; padding-bottom:10px;'>Galgame 字体工具箱 完整使用指南</h3>
+    text = """Galgame 字体工具箱 使用指南
 
-    <h3>快速入门</h3>
-    <p>本工具专为游戏本地化（汉化）设计。典型工作流：</p>
-    <ol>
-        <li><b>扫描文本</b> - 在【映射表】功能中导入含中文的翻译文本目录。</li>
-        <li><b>生成映射</b> - 自动生成“原中文 -> 日文生僻字”的字符映射表 (JSON)。</li>
-        <li><b>制作伪装字体</b> - 主界面选择“模式1”，基于原版字体与生成的映射表，制作出能被游戏引擎正常读取的伪装日文字体。</li>
-    </ol>
-    <div class='tip'>💡 拖拽功能：软件内所有路径输入框都支持直接拖拽文件或文件夹。</div>
+快速入门
+1. 在映射表功能中扫描文本目录。
+2. 生成字符映射表 JSON。
+3. 在主界面选择处理模式并生成字体。
 
-    <h3>快捷键</h3>
-    <ul>
-        <li><code>Ctrl+O</code> 打开主字体文件</li>
-        <li><code>Ctrl+S</code> 另存当前配置为 JSON 预设</li>
-        <li><code>Ctrl+E</code> 导出完整配置状态（包括界面状态）</li>
-        <li><code>Ctrl+I</code> 导入 JSON 或状态预设</li>
-        <li><code>Ctrl+Z / Y</code> 跨文本框的撤销/重做</li>
-        <li><code>Ctrl+G</code> 一键生成最终字体</li>
-        <li><code>F5</code> 刷新当前操作面板和预览选项</li>
-        <li><code>Ctrl+1~5</code> 快速切换主标签页</li>
-    </ul>
+常用快捷键
+- Ctrl+O: 打开主字体文件
+- Ctrl+S: 保存预设
+- Ctrl+E: 导出配置
+- Ctrl+I: 导入配置
+- Ctrl+Z / Ctrl+Y: 撤销与重做
+- Ctrl+G: 一键生成字体
+- F5: 刷新
 
-    <h3>处理模式说明 (主界面左侧)</h3>
-    <ul>
-        <li><b>模式1 - 日繁映射 (推荐)</b>：配合映射字典，将需要渲染的中文字符映射到日文字形的位置上，这是突破引擎日文编码限制的最常用手法。</li>
-        <li><b>模式2 - 逆向映射</b>：模式1的反操作。</li>
-        <li><b>模式3 - 仅伪装</b>：不改变内部字形排列，仅仅修改字体的外部文件头信息伪装成原版日文字体以通过游戏引擎的基础校验。</li>
-        <li><b>模式4 / 模式5</b>：自带繁简转换算法，一键对中文字体内的全部字形进行繁简 / 简繁转化。</li>
-    </ul>
-
-    <h3>右侧功能区详解</h3>
-    <h4>ℹ️ 字体信息</h4>
-    <p>查看、编辑和提取字体元数据（字体名称、版本号、版权、设计师等），双击表格单元格直接修改参数去深度伪装，骗过部分严苛的引擎校验。</p>
-    
-    <h4>🔠 映射表</h4>
-    <p>核心翻译辅助功能组，主要包含：</p>
-    <ul>
-        <li><b>扫描/生成映射</b>：基于翻译文本抽出需要用到且不重复的所有汉字，生成供后续使用的字典映射表。</li>
-        <li><b>检查缺字</b>：结合目标字体检查翻译文本是否超出该字库渲染范围。</li>
-        <li><b>预览替换</b>：快速预览映射字典替换后的全乱码文本视觉效果。</li>
-        <li><b>还原文本</b>：支持将已被映射工具处理成乱码的外文文本，利用旧版 JSON 映射表逆向恢复为清晰的中文原文本。</li>
-    </ul>
-    
-    <h4>📊 分析对比</h4>
-    <p>交叉对比两个不同字体的字符集差异，分析字体对各语言区块（如基本汉字、中日扩展区、假名、符号等）的精准覆盖率，辅助选择底字库。</p>
-    
-    <h4>✂️ 精简瘦身 (Subset)</h4>
-    <p>仅保留翻译文本中切实使用到的字符，删除所有的多余无用字形，大幅减小字体文件体积（一般可将几十MB缩减至两三MB以内，显著加快系统载入）。</p>
-    
-    <h4>➕ 合并补字 & 智能补字</h4>
-    <p>当主游戏字体缺字时，自动在补全字体（如思源黑体）中抽取字形拼接到主字体中。智能补字更支持自动分析本地系统字库来源，一键推荐并补全所有缺失的罕见汉字。</p>
-    
-    <h4>🖼️ 图片字库 (ImgFont)</h4>
-    <p>游戏 UI 设计和古董引擎利器。一键将矢量字体散列并生成 PNG / WebP / TGA / BMP 及 BMFont 格式的等宽、纹理图片字库集合。</p>
-    
-    <h4>🌐 Web转换</h4>
-    <p>将传统的 TTF / OTF 字体直接转换为网页友好的 WOFF2 格式，实现极限体积压缩，极其适合浏览器和 Web H5 环境的引擎移植（如各种网页端运行的 Galgame 或 RPG Maker MV）。</p>
-    
-    <h4>📐 度量修复</h4>
-    <p>可以手动或全自动调整字体的宽高比界限、行距 (Ascender/Descender/LineGap) 等垂直度量。能彻底解决汉化后文字在对话框UI中偏上偏下、出界或被莫名截断显示不全的顽疾。</p>
-    
-    <h4>🧹 兼容清理</h4>
-    <p>物理移除字体中现代的高级 OpenType 渲染特性表（如GSUB/GPOS/hdmx/vdmx等），极大提高底边古老游戏引擎或自研引擎对魔改字体的兼容性，有效防止文字渲染系统崩溃或卡死。</p>
-
-    <h3>常见问题 FAQ</h3>
-    <div class='warn'>❓ <b>文字显示变成了方块或问号？</b><br>缺字现象。请在【映射表】模块中使用“检查缺字”功能排查。如果是使用了精简功能，确保你扫描了<b>所有</b>会显示在屏幕上的文本和系统 UI 词条！</div>
-    <div class='warn'>❓ <b>文字位置总是偏上/偏下对不齐？</b><br>这是中日字体度量差异造成的。使用【度量修复】功能，选择原版游戏罗马音字体作为“标杆指标”，点击“自动计算”来硬对齐原版游戏字体的高度标准即可。</div>
-    <div class='warn'>❓ <b>替换字体后游戏直接闪退？</b><br>极大概率是游戏原生引擎不识别高级字体特性表。尝试并在最后一步对其进行【兼容清理】，勾选“暴力清除所有高级特性表”。同时对于只支持 TTF 的老游戏，确保不要喂给它们 OTF 格式的改版字体（遇到 OTF 本工具已默认自动转为 TTF 处理）。</div>
-
-    <p style='text-align:center; font-size:11px; color:#999; margin-top:20px;'>
-        所有输入框支持拖拽 | 工具自动保存操作状态 | 本指南随时更新 | 祝工作顺利！✨
-    </p>
-    """
-    main_window.help_browser.setHtml(html)
+提示
+- 大多数路径输入框支持拖拽文件或文件夹。
+- 建议先确认映射表再执行批量生成。
+"""
+    main_window.help_browser.setPlainText(text)

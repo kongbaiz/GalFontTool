@@ -1,6 +1,6 @@
 import os
-from PyQt6.QtCore import Qt, QPoint, QRectF
-from PyQt6.QtGui import QPainter, QPainterPath, QPen, QColor, QLinearGradient
+from PySide6.QtCore import Qt, QPoint, QRectF
+from PySide6.QtGui import QPainter, QPainterPath, QPen, QColor, QLinearGradient
 
 def paintEvent(main_window, event):
     painter = QPainter(main_window)

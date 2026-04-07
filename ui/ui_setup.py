@@ -1,11 +1,11 @@
 import os
 import json
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
                              QTextEdit, QFrame, QLineEdit, QComboBox, QCheckBox,
-                             QGridLayout, QScrollArea, QTableWidget, QTableWidgetItem,
+                             QGridLayout, QTableWidget,
                              QHeaderView, QSizePolicy, QSplitter, QStackedWidget)
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 
 from .widgets import IOSInput, IOSButton
 from config import HAS_BROTLI
@@ -28,19 +28,17 @@ def setup_image_font_ui(main_window, parent_widget):
         "🖼️ BMP 字库 (位图)",
         "📝 BMFont (FNT格式)"
     ])
-    main_window.imgfont_mode.setFixedHeight(38)
+    main_window.imgfont_mode.setMinimumHeight(32)
     main_window.imgfont_mode.currentIndexChanged.connect(lambda idx: main_window.imgfont_stack.setCurrentIndex(idx))
     mode_layout.addWidget(main_window.imgfont_mode)
     l.addLayout(mode_layout)
     
     line = QFrame()
-    line.setFrameShape(QFrame.Shape.HLine)
-    line.setStyleSheet("background: rgba(0,0,0,0.1);")
+    line.setFrameShape(QFrame.Shape.NoFrame)
     l.addWidget(line)
     
     main_window.imgfont_stack = QStackedWidget()
     
-    # === 模式 0: PNG/WebP 图片字库 ===
     p_pic = QWidget()
     l_pic = QVBoxLayout(p_pic)
     l_pic.setContentsMargins(0, 10, 0, 0)
@@ -49,7 +47,7 @@ def setup_image_font_ui(main_window, parent_widget):
     main_window.pic_font = IOSInput("输入字体路径", "game.ttf")
     main_window.pic_font.setToolTip("用于生成图片的源字体")
     btn_pic_font = QPushButton("📁")
-    btn_pic_font.setFixedSize(40, 38)
+    btn_pic_font.setMinimumSize(36, 30)
     main_window.pic_folder = IOSInput("保存目录", "image38")
     main_window.pic_folder.setToolTip("生成的图片将保存在该文件夹下")
     main_window.pic_fmt = IOSInput("扩展名 (如 webp)", "webp")
@@ -100,14 +98,13 @@ def setup_image_font_ui(main_window, parent_widget):
     l_pic.addStretch()
     main_window.imgfont_stack.addWidget(p_pic)
     
-    # === 模式 1: TGA 字库 ===
     p_tga = QWidget()
     l_tga = QVBoxLayout(p_tga)
     l_tga.setContentsMargins(0, 10, 0, 0)
     gd_tga = QGridLayout()
     main_window.tga_font = IOSInput("输入字体", "game.ttf")
     btn_tga_font = QPushButton("📁")
-    btn_tga_font.setFixedSize(40, 38)
+    btn_tga_font.setMinimumSize(36, 30)
     main_window.tga_dat = IOSInput("DAT文件名", "text")
     main_window.tga_dat.setToolTip("生成的索引文件名，不含后缀")
     main_window.tga_eng_n = IOSInput("引擎内字体名", "M+ 1c")
@@ -150,14 +147,13 @@ def setup_image_font_ui(main_window, parent_widget):
     l_tga.addStretch()
     main_window.imgfont_stack.addWidget(p_tga)
     
-    # === 模式 2: BMP 字库 ===
     p_bmp = QWidget()
     l_bmp = QVBoxLayout(p_bmp)
     l_bmp.setContentsMargins(0, 10, 0, 0)
     gd_bmp = QGridLayout()
     main_window.bmp_font = IOSInput("输入字体", "game.ttf")
     btn_bmp_font = QPushButton("📁")
-    btn_bmp_font.setFixedSize(40, 38)
+    btn_bmp_font.setMinimumSize(36, 30)
     main_window.bmp_fs = IOSInput("Size", "60")
     main_window.bmp_sz = IOSInput("WxH", "64")
     main_window.bmp_cnt = IOSInput("Count", "16")
@@ -182,7 +178,6 @@ def setup_image_font_ui(main_window, parent_widget):
     l_bmp.addStretch()
     main_window.imgfont_stack.addWidget(p_bmp)
     
-    # === 模式 3: BMFont ===
     p_bmfont = QWidget()
     l_bmfont = QVBoxLayout(p_bmfont)
     l_bmfont.setContentsMargins(0, 10, 0, 0)
@@ -195,9 +190,9 @@ def setup_image_font_ui(main_window, parent_widget):
     main_window.bm_tex_size = QComboBox()
     main_window.bm_tex_size.addItems(["512", "1024", "2048", "4096"])
     main_window.bm_tex_size.setCurrentIndex(1)
-    main_window.bm_tex_size.setFixedHeight(38)
-    btn_font = QPushButton("📁"); btn_font.setFixedSize(40, 38)
-    btn_txt = QPushButton("📁"); btn_txt.setFixedSize(40, 38); btn_txt.clicked.connect(lambda: main_window.browse_folder(main_window.bm_char_txt))
+    main_window.bm_tex_size.setMinimumHeight(32)
+    btn_font = QPushButton("📁"); btn_font.setMinimumSize(36, 30)
+    btn_txt = QPushButton("📁"); btn_txt.setMinimumSize(36, 30); btn_txt.clicked.connect(lambda: main_window.browse_folder(main_window.bm_char_txt))
     gd_bm.addWidget(QLabel("输入字体:"), 0, 0)
     gd_bm.addLayout(main_window.create_file_row(main_window.bm_font, btn_font), 0, 1)
     gd_bm.addWidget(QLabel("字符来源:"), 1, 0)
@@ -217,7 +212,6 @@ def setup_image_font_ui(main_window, parent_widget):
         "针对标准位图字体格式的引擎。<br>"
         "字符来源支持 .txt 文件或文件夹 (将自动扫描包含的文本)"
     )
-    info_bm.setStyleSheet("background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; font-size: 11px;")
     l_bmfont.addWidget(info_bm)
     l_bmfont.addStretch()
     main_window.imgfont_stack.addWidget(p_bmfont)
@@ -244,7 +238,7 @@ def setup_mapping_manager_ui(main_window, parent_widget):
     main_window.map_src = IOSInput("选择包含翻译文本的目录", "cn_text")
     main_window.map_src.setToolTip("请直接拖入文件夹到此输入框，或点击右侧按钮选择")
     main_window.btn_map_src = QPushButton("📁")
-    main_window.btn_map_src.setFixedSize(40, 38)
+    main_window.btn_map_src.setMinimumSize(36, 30)
     main_window.btn_map_src.clicked.connect(lambda: main_window.browse_folder(main_window.map_src))
     main_window.map_out = IOSInput("替换后文本保存目录", "cn_text_mapped")
     main_window.map_json = IOSInput("输出的JSON文件名", "custom_map.json")
@@ -252,7 +246,7 @@ def setup_mapping_manager_ui(main_window, parent_widget):
     main_window.map_limit_font = IOSInput("可选：限制映射范围的字体", "")
     main_window.map_limit_font.setToolTip("只映射到该字体中存在的字符上")
     btn_limit_font = QPushButton("📁")
-    btn_limit_font.setFixedSize(40, 38)
+    btn_limit_font.setMinimumSize(36, 30)
     gd_map.addWidget(QLabel("输入文本目录:"), 0, 0)
     box_ms = QHBoxLayout()
     box_ms.addWidget(main_window.map_src)
@@ -268,7 +262,6 @@ def setup_mapping_manager_ui(main_window, parent_widget):
     gd_map.addLayout(main_window.create_file_row(main_window.map_limit_font, btn_limit_font), 4, 1)
     l_map.addLayout(gd_map)
     info_txt = QLabel("将包含翻译文本的文件夹直接拖入上方输入框即可")
-    info_txt.setStyleSheet("color: gray; font-size: 11px;")
     l_map.addWidget(info_txt)
     main_window.btn_run_map = IOSButton("扫描并生成映射")
     main_window.btn_run_map.clicked.connect(main_window.do_gen_map)
@@ -347,9 +340,9 @@ def setup_font_analysis_ui(main_window, parent_widget):
     main_window.cmp_font1 = IOSInput("字体 A", "fontA.ttf")
     main_window.cmp_font2 = IOSInput("字体 B", "fontB.ttf")
     btn_cmp_font1 = QPushButton("📁")
-    btn_cmp_font1.setFixedSize(40, 38)
+    btn_cmp_font1.setMinimumSize(36, 30)
     btn_cmp_font2 = QPushButton("📁")
-    btn_cmp_font2.setFixedSize(40, 38)
+    btn_cmp_font2.setMinimumSize(36, 30)
     gd.addWidget(QLabel("字体 A:"), 0, 0)
     gd.addLayout(main_window.create_file_row(main_window.cmp_font1, btn_cmp_font1), 0, 1)
     gd.addWidget(QLabel("字体 B:"), 1, 0)
@@ -357,7 +350,6 @@ def setup_font_analysis_ui(main_window, parent_widget):
     l_cmp.addLayout(gd)
     main_window.cmp_result = QTextEdit()
     main_window.cmp_result.setReadOnly(True)
-    main_window.cmp_result.setStyleSheet("background: rgba(0,0,0,0.03); border-radius: 8px; padding: 10px; font-family: 'Consolas', monospace;")
     main_window.cmp_result.setPlainText("点击下方按钮开始对比...")
     l_cmp.addWidget(main_window.cmp_result)
     btn_row = QHBoxLayout()
@@ -381,13 +373,12 @@ def setup_font_analysis_ui(main_window, parent_widget):
     gd_cov.setSpacing(10)
     main_window.cov_font = IOSInput("请拖入要分析的字体", "game.ttf")
     btn_cov_font = QPushButton("📁")
-    btn_cov_font.setFixedSize(40, 38)
+    btn_cov_font.setMinimumSize(36, 30)
     gd_cov.addWidget(QLabel("字体文件:"), 0, 0)
     gd_cov.addLayout(main_window.create_file_row(main_window.cov_font, btn_cov_font), 0, 1)
     l_cov.addLayout(gd_cov)
     main_window.cov_result = QTextEdit()
     main_window.cov_result.setReadOnly(True)
-    main_window.cov_result.setStyleSheet("background: rgba(0,0,0,0.03); border-radius: 8px; padding: 10px; font-family: 'Consolas', monospace;")
     main_window.cov_result.setPlainText("点击下方按钮开始分析...")
     l_cov.addWidget(main_window.cov_result)
     main_window.btn_run_coverage = IOSButton("分析覆盖率")
@@ -415,9 +406,9 @@ def setup_unified_fix_ui(main_window, parent_widget):
     main_window.fix_out = IOSInput("输出文件名", "fixed.ttf")
     
     btn_src = QPushButton("📁")
-    btn_src.setFixedSize(40, 38)
+    btn_src.setMinimumSize(36, 30)
     btn_ref = QPushButton("📁")
-    btn_ref.setFixedSize(40, 38)
+    btn_ref.setMinimumSize(36, 30)
     
     gd.addWidget(QLabel("1. 目标字体:"), 0, 0)
     gd.addLayout(main_window.create_file_row(main_window.fix_src, btn_src), 0, 1)
@@ -427,7 +418,7 @@ def setup_unified_fix_ui(main_window, parent_widget):
     gd.addWidget(main_window.fix_out, 2, 1)
     l.addLayout(gd)
 
-    line = QFrame(); line.setFrameShape(QFrame.Shape.HLine); line.setStyleSheet("background:rgba(0,0,0,0.1)")
+    line = QFrame(); line.setFrameShape(QFrame.Shape.NoFrame)
     l.addWidget(line)
 
     l.addWidget(QLabel("<b>字形调整</b> (可选)"))
@@ -464,13 +455,6 @@ def setup_unified_fix_ui(main_window, parent_widget):
     btn_auto.clicked.connect(main_window.read_unified_metrics)
     btn_auto.setCursor(Qt.CursorShape.PointingHandCursor)
     btn_auto.setFixedWidth(160)
-    btn_auto.setStyleSheet("""
-        QPushButton { 
-            background-color: #E1F5FE; color: #0277BD; border: 1px solid #B3E5FC; 
-            border-radius: 15px; padding: 4px; font-weight: bold;
-        }
-        QPushButton:hover { background-color: #81D4FA; color: white;}
-    """)
     tool_bar.addWidget(btn_auto)
     
     l.addLayout(tool_bar)
@@ -498,47 +482,6 @@ def setup_unified_fix_ui(main_window, parent_widget):
     main_window.btn_do_fix.clicked.connect(main_window.do_unified_fix)
     l.addWidget(main_window.btn_do_fix)
 
-def setup_metrics_ui(main_window, parent_widget):
-    l_metrics = QVBoxLayout(parent_widget)
-    main_window.lbl_met = QLabel("字体垂直度量修正")
-    main_window.lbl_met.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    main_window.lbl_met.setFont(QFont("Microsoft YaHei", 14, QFont.Weight.Bold))
-    l_metrics.addWidget(main_window.lbl_met)
-
-    gd_met = QGridLayout()
-    gd_met.setSpacing(10)
-
-    main_window.met_font_path = IOSInput("请拖入待修复字体", "fixed.ttf")
-    main_window.met_ref_path = IOSInput("参考字体 (原版JP字体)", "original.ttf")
-
-    main_window.in_ascender = IOSInput("Ascender (上行)", "880")
-    main_window.in_descender = IOSInput("Descender (下行)", "-120")
-    main_window.in_linegap = IOSInput("LineGap (行距)", "0")
-
-    btn_read_met = QPushButton("读取数值")
-    btn_read_met.setFixedHeight(38)
-    btn_read_met.clicked.connect(main_window.read_font_metrics)
-    main_window.btn_apply_met = IOSButton("应用并保存")
-    main_window.btn_apply_met.clicked.connect(main_window.apply_font_metrics)
-
-    gd_met.addWidget(QLabel("目标字体:"), 0, 0)
-    gd_met.addWidget(main_window.met_font_path, 0, 1)
-    gd_met.addWidget(QLabel("参考字体:"), 1, 0)
-    gd_met.addWidget(main_window.met_ref_path, 1, 1)
-    gd_met.addWidget(btn_read_met, 2, 0, 1, 2)
-
-    gd_met.addWidget(QLabel("上行高度"), 3, 0)
-    gd_met.addWidget(main_window.in_ascender, 3, 1)
-    gd_met.addWidget(QLabel("下行高度:"), 4, 0)
-    gd_met.addWidget(main_window.in_descender, 4, 1)
-    gd_met.addWidget(QLabel("行间距"), 5, 0)
-    gd_met.addWidget(main_window.in_linegap, 5, 1)
-
-    l_metrics.addLayout(gd_met)
-    l_metrics.addWidget(QLabel("用于解决翻译后文字在游戏中偏上、偏下或被截断的问题"))
-    l_metrics.addStretch()
-    l_metrics.addWidget(main_window.btn_apply_met)
-
 def setup_subset_ui(main_window, parent_widget):
     l_sub = QVBoxLayout(parent_widget)
     main_window.lbl_sub = QLabel("精简瘦身")
@@ -555,9 +498,9 @@ def setup_subset_ui(main_window, parent_widget):
     main_window.sub_out = IOSInput("输出文件名", "game_subset.ttf")
 
     btn_scan_dir = QPushButton("📁")
-    btn_scan_dir.setFixedSize(40, 38)
+    btn_scan_dir.setMinimumSize(36, 30)
     btn_font = QPushButton("📁")
-    btn_font.setFixedSize(40, 38)
+    btn_font.setMinimumSize(36, 30)
 
     gd.addWidget(QLabel("1. 源字体:"), 0, 0)
     gd.addLayout(main_window.create_file_row(main_window.sub_font, btn_font), 0, 1)
@@ -577,7 +520,6 @@ def setup_subset_ui(main_window, parent_widget):
     <font color='#F44336'>自动剔除：未使用的汉字、韩文、生僻符号将被删除</font><br>
     此模式可最大程度减小体积 (如 20MB -> 2~5MB)
     """)
-    info.setStyleSheet("background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; font-size: 12px;")
     l_sub.addWidget(info)
 
     l_sub.addStretch()
@@ -609,9 +551,9 @@ def setup_merge_ui(main_window, parent_widget):
     main_window.merge_filter.setToolTip("在此输入您想从来源字体中提取的具体字符（如'♥★'）。\n如果不填，程序会自动把来源字体中所有基础字体没有的字都补进去。")
 
     btn_merge_base = QPushButton("📁")
-    btn_merge_base.setFixedSize(40, 38)
+    btn_merge_base.setMinimumSize(36, 30)
     btn_merge_add = QPushButton("📁")
-    btn_merge_add.setFixedSize(40, 38)
+    btn_merge_add.setMinimumSize(36, 30)
 
     gd.addWidget(QLabel("1. 基础字体:"), 0, 0)
     gd.addLayout(main_window.create_file_row(main_window.merge_base, btn_merge_base), 0, 1)
@@ -630,7 +572,6 @@ def setup_merge_ui(main_window, parent_widget):
     <font color='#2196F3'>场景：字体1缺了几个字，想从字体2里拿过来</font><br>
     <font color='#4CAF50'>用法：在"指定字符"框中输入那几个字，点击合并即可</font>
     """)
-    info.setStyleSheet("background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; font-size: 12px;")
     l_merge.addWidget(info)
 
     l_merge.addStretch()
@@ -652,7 +593,7 @@ def setup_info_ui(main_window, parent_widget):
     main_window.info_font = IOSInput("拖入字体文件", "font.ttf")
     
     btn_browse = QPushButton("📁")
-    btn_browse.setFixedSize(40, 38)
+    btn_browse.setMinimumSize(36, 30)
     
     gd.addWidget(QLabel("字体文件:"), 0, 0)
     gd.addLayout(main_window.create_file_row(main_window.info_font, btn_browse), 0, 1)
@@ -683,58 +624,23 @@ def setup_info_ui(main_window, parent_widget):
     btn_row.addWidget(main_window.btn_save_info)
     l_info.addLayout(btn_row)
 
-def setup_compare_ui(main_window, parent_widget):
-    l_cmp = QVBoxLayout(parent_widget)
-    main_window.lbl_cmp = QLabel("字符集对比")
-    main_window.lbl_cmp.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    main_window.lbl_cmp.setFont(QFont("Microsoft YaHei", 14, QFont.Weight.Bold))
-    l_cmp.addWidget(main_window.lbl_cmp)
-
-    gd = QGridLayout()
-    gd.setSpacing(10)
-    main_window.cmp_font1 = IOSInput("字体 A", "fontA.ttf")
-    main_window.cmp_font2 = IOSInput("字体 B", "fontB.ttf")
-    gd.addWidget(QLabel("字体 A:"), 0, 0)
-    gd.addWidget(main_window.cmp_font1, 0, 1)
-    gd.addWidget(QLabel("字体 B:"), 1, 0)
-    gd.addWidget(main_window.cmp_font2, 1, 1)
-    l_cmp.addLayout(gd)
-
-    main_window.cmp_result = QTextEdit()
-    main_window.cmp_result.setReadOnly(True)
-    main_window.cmp_result.setStyleSheet("background: rgba(0,0,0,0.03); border-radius: 8px; padding: 10px; font-family: 'Consolas', monospace;")
-    main_window.cmp_result.setPlainText("点击下方按钮开始对比...")
-    l_cmp.addWidget(main_window.cmp_result)
-
-    btn_row = QHBoxLayout()
-    main_window.btn_run_compare = IOSButton("开始对比")
-    main_window.btn_export_diff = IOSButton("导出差异")
-    main_window.btn_run_compare.clicked.connect(main_window.do_compare_fonts)
-    main_window.btn_export_diff.clicked.connect(main_window.do_export_diff)
-    btn_row.addWidget(main_window.btn_run_compare)
-    btn_row.addWidget(main_window.btn_export_diff)
-    l_cmp.addLayout(btn_row)
-
-    main_window._compare_result = {}
-
 def setup_smart_fallback_ui(main_window, parent_widget):
     l_smart = QVBoxLayout(parent_widget)
     lbl = QLabel("智能补字")
     lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
     lbl.setFont(QFont("Microsoft YaHei", 14, QFont.Weight.Bold))
-    lbl.setStyleSheet(f"color: {main_window.theme['text_main']};")
     l_smart.addWidget(lbl)
     gd = QGridLayout()
     gd.setSpacing(10)
     main_window.sf_primary = IOSInput("主字体 (缺字的那个)", "game.ttf")
     btn_sf_primary = QPushButton("📁")
-    btn_sf_primary.setFixedSize(40, 38)
+    btn_sf_primary.setMinimumSize(36, 30)
     main_window.sf_txt = IOSInput("文本目录 (检查这些文本里的字)", "cn_text")
     main_window.sf_lib = IOSInput("补全库目录 (存放很多字体的文件夹)", "fonts_library")
     btn_scan_txt = QPushButton("📁")
-    btn_scan_txt.setFixedSize(40, 38)
+    btn_scan_txt.setMinimumSize(36, 30)
     btn_scan_lib = QPushButton("📁")
-    btn_scan_lib.setFixedSize(40, 38)
+    btn_scan_lib.setMinimumSize(36, 30)
     gd.addWidget(QLabel("1. 主字体:"), 0, 0)
     gd.addLayout(main_window.create_file_row(main_window.sf_primary, btn_sf_primary), 0, 1)
     gd.addWidget(QLabel("2. 文本源:"), 1, 0)
@@ -751,13 +657,12 @@ def setup_smart_fallback_ui(main_window, parent_widget):
     main_window.btn_run_smart = IOSButton("开始分析")
     main_window.btn_run_smart.clicked.connect(main_window.do_smart_fallback_scan)
     main_window.btn_export_smart = QPushButton("导出补全清单")
-    main_window.btn_export_smart.setFixedHeight(45)
+    main_window.btn_export_smart.setMinimumHeight(34)
     main_window.btn_export_smart.clicked.connect(main_window.export_smart_result)
     btn_box.addWidget(main_window.btn_run_smart)
     btn_box.addWidget(main_window.btn_export_smart)
     l_smart.addLayout(btn_box)
     hint = QLabel("工具会扫描库中所有字体，优先推荐包含缺字数量最多的那个")
-    hint.setStyleSheet("color: gray; font-size: 11px;")
     l_smart.addWidget(hint)
 
 def setup_woff2_ui(main_window, parent_widget):
@@ -769,7 +674,6 @@ def setup_woff2_ui(main_window, parent_widget):
 
     if not HAS_BROTLI:
         warn = QLabel("未安装 brotli 模块，无法使用此功能。\n请在终端运行: pip install brotli")
-        warn.setStyleSheet("color: red; padding: 20px; font-size: 14px; background: rgba(255,0,0,0.1); border-radius: 10px;")
         warn.setAlignment(Qt.AlignmentFlag.AlignCenter)
         l.addWidget(warn)
         l.addStretch()
@@ -780,7 +684,7 @@ def setup_woff2_ui(main_window, parent_widget):
     main_window.woff2_src = IOSInput("请拖入 TTF/OTF 字体", "font.ttf")
     main_window.woff2_out = IOSInput("输出文件名", "webfont.woff2")
     btn = QPushButton("📁")
-    btn.setFixedSize(40, 38)
+    btn.setMinimumSize(36, 30)
     
     gd.addWidget(QLabel("源字体:"), 0, 0)
     gd.addLayout(main_window.create_file_row(main_window.woff2_src, btn), 0, 1)
@@ -795,7 +699,6 @@ def setup_woff2_ui(main_window, parent_widget):
         "3. RPG Maker MZ 等支持 WOFF2 的引擎<br>"
         "WOFF2 具有极高的压缩率，通常比 TTF 小 40-70%"
     )
-    info.setStyleSheet("background: rgba(0,0,0,0.05); padding: 15px; border-radius: 8px; font-size: 12px; line-height: 150%;")
     l.addWidget(info)
     l.addStretch()
 
@@ -815,7 +718,7 @@ def setup_cleanup_ui(main_window, parent_widget):
     main_window.clean_src = IOSInput("请拖入字体文件", "game.ttf")
     main_window.clean_out = IOSInput("输出文件名", "game_clean.ttf")
     btn = QPushButton("📁")
-    btn.setFixedSize(40, 38)
+    btn.setMinimumSize(36, 30)
     
     gd.addWidget(QLabel("源字体:"), 0, 0)
     gd.addLayout(main_window.create_file_row(main_window.clean_src, btn), 0, 1)
@@ -853,7 +756,6 @@ def setup_cleanup_ui(main_window, parent_widget):
         "表现为：游戏崩溃、文字重叠、行距异常。<br>"
         "使用此功能清理掉不需要的高级表，可以显著提高兼容性并减小体积。"
     )
-    info.setStyleSheet("background: rgba(0,0,0,0.05); padding: 15px; border-radius: 8px; font-size: 12px; line-height: 150%;")
     l.addWidget(info)
     l.addStretch()
 
@@ -863,8 +765,7 @@ def setup_cleanup_ui(main_window, parent_widget):
 
 def setup_preview_ui(main_window, parent_layout):
     line = QFrame()
-    line.setFrameShape(QFrame.Shape.HLine)
-    line.setStyleSheet("background: rgba(0,0,0,0.1);")
+    line.setFrameShape(QFrame.Shape.NoFrame)
     parent_layout.addWidget(line)
     parent_layout.addSpacing(5)
 
@@ -875,13 +776,13 @@ def setup_preview_ui(main_window, parent_layout):
     main_window.preview_input = IOSInput("输入预览文本...", "测试文本 Test 123")
     main_window.preview_input.setToolTip("输入您想预览的文本")
     main_window.preview_input.textChanged.connect(main_window.update_previews)
-    main_window.preview_input.setFixedHeight(30)
+    main_window.preview_input.setMinimumHeight(30)
     parent_layout.addWidget(main_window.preview_input)
 
     main_window.preview_area = QTextEdit("预览")
     main_window.preview_area.setReadOnly(True)
     main_window.preview_area.setFontPointSize(16)
-    main_window.preview_area.setFixedHeight(70)
+    main_window.preview_area.setMinimumHeight(58)
     main_window.preview_area.setToolTip("字体预览")
     parent_layout.addWidget(main_window.preview_area)
 

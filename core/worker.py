@@ -1,13 +1,13 @@
 import traceback
-from PyQt6.QtCore import QThread, pyqtSignal
+from PySide6.QtCore import QThread, Signal
 
 from core.tasks import image_tasks, font_tasks, text_tasks, modify_tasks
 
 
 class Worker(QThread):
-    log = pyqtSignal(str)
-    prog = pyqtSignal(int)
-    done = pyqtSignal(object)
+    log = Signal(str)
+    prog = Signal(int)
+    done = Signal(object)
 
     def __init__(self, task_type, config):
         super().__init__()

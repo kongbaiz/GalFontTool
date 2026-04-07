@@ -1,7 +1,7 @@
 import os
 import sys
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QFont
+from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QFont
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(base_dir)

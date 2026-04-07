@@ -1,5 +1,5 @@
 import traceback
-from PyQt6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 
 class FontToolError(Exception):
     def __init__(self, message, details=None):

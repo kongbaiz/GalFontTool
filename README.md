@@ -52,7 +52,7 @@
 
 2. 安装依赖：
    ```bash
-   pip install PyQt6 fonttools pillow opencc-python-reimplemented brotli
+  pip install PySide6 fonttools pillow opencc-python-reimplemented brotli
    ```
 
 3. 运行工具：
@@ -105,12 +105,8 @@
 
 ## 🎨 主题配置
 
-在 `config.py` 中可以修改 UI 主题。默认内置了多种配色方案：
-- 🌊 深海蓝
-- 🌸 樱花粉
-- 🍃 薄荷绿
-- 🌙 暗夜黑
-- 🍊 日落橙
+在 `config.py` 中可以调整 UI 主题参数。当前默认采用单一简约主题：
+- 简约蓝 (Clean)
 
 ---
 
@@ -125,7 +121,7 @@ GalFontTool/
 │   │   ├── modify_tasks.py  # 字体修改/修复逻辑
 │   │   └── text_tasks.py    # 文本扫描与映射逻辑
 │   └── utils.py             # 通用工具函数
-├── ui/                      # PyQt6 界面代码
+├── ui/                      # PySide6 界面代码
 ├── config.py                # 配置文件
 └── main.py                  # 程序入口
 ```

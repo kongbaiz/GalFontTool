@@ -9,5 +9,5 @@ dependencies = [
     "fonttools>=4.62.1",
     "opencc-python-reimplemented>=0.1.7",
     "pillow>=12.2.0",
-    "pyqt6>=6.11.0",
+    "pyside6>=6.11.0",
 ]

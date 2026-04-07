@@ -3,8 +3,8 @@ import json
 import glob
 import traceback
 import tempfile
-from PyQt6.QtWidgets import QMessageBox, QFileDialog, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QPushButton, QTableWidgetItem, QTableWidget, QHeaderView
-from PyQt6.QtCore import Qt
+from PySide6.QtWidgets import QMessageBox, QFileDialog, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QPushButton, QTableWidgetItem, QTableWidget, QHeaderView
+from PySide6.QtCore import Qt
 from fontTools.ttLib import TTFont
 from fontTools import subset
 from core.utils import ensure_ttf
@@ -443,7 +443,7 @@ def do_run_pipeline(main_window):
     main_window._run_next_pipeline_step()
 
 def _run_next_pipeline_step(main_window):
-    from PyQt6.QtCore import QTimer
+    from PySide6.QtCore import QTimer
     if main_window._pipeline_idx >= len(main_window._pipeline_steps):
         main_window.pipe_status.setText("✅ 工作流全部完成！")
         main_window.log("✅ <b>工作流执行完毕！</b>")
@@ -475,12 +475,12 @@ def _run_next_pipeline_step(main_window):
         main_window.pipe_status.setText(f"❌ 失败于步骤: {step_name}")
 
 def _on_pipeline_step_done(main_window, result):
-    from PyQt6.QtCore import QTimer
+    from PySide6.QtCore import QTimer
     main_window._pipeline_idx += 1
     QTimer.singleShot(500, lambda: _run_next_pipeline_step(main_window))
 
 def do_read_font_info(main_window):
-    from PyQt6.QtCore import Qt
+    from PySide6.QtCore import Qt
     font_path = main_window.info_font.text()
     if not os.path.exists(font_path):
         QMessageBox.warning(main_window, "文件不存在", "请先选择有效的字体文件")
@@ -810,7 +810,7 @@ def on_smart_scan_done(main_window, result):
         main_window.sf_table.setItem(row, 2, QTableWidgetItem(font_name))
         
     main_window.sf_table.setSortingEnabled(True)
-    main_window.lbl_status.setText(f"分析完成，找到 {len(result)} 个补全建议")
+    main_window.statusBar().showMessage(f"分析完成，找到 {len(result)} 个补全建议")
     main_window.set_ui_busy(False)
     
     if len(result) > 0:
@@ -1053,14 +1053,12 @@ def do_preview_mapping(main_window):
 
     info = QLabel(f"📄 示例文件: {os.path.basename(sample_file) if sample_file else '内置示例'}\n"
                   f"🔄 映射表: {len(mapping)} 条 | 替换字符: {replaced_count} 个")
-    info.setStyleSheet("font-weight: bold; padding: 10px;")
     layout.addWidget(info)
 
     compare_layout = QHBoxLayout()
 
     left_box = QVBoxLayout()
     left_lbl = QLabel("📝 替换前 (原文)")
-    left_lbl.setStyleSheet("font-weight: bold;")
     left_box.addWidget(left_lbl)
     left_text = QTextEdit()
     left_text.setPlainText(sample_text)
@@ -1070,7 +1068,6 @@ def do_preview_mapping(main_window):
 
     right_box = QVBoxLayout()
     right_lbl = QLabel("✨ 替换后 (应用映射)")
-    right_lbl.setStyleSheet("font-weight: bold;")
     right_box.addWidget(right_lbl)
     right_text = QTextEdit()
     right_text.setPlainText(replaced_text)
@@ -1411,7 +1408,6 @@ def show_history_dialog(main_window):
     if not history_list:
         lbl = QLabel("暂无操作历史记录")
         lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl.setStyleSheet("color: gray; font-size: 14px; padding: 50px;")
         layout.addWidget(lbl)
     else:
         table = QTableWidget()

@@ -1,72 +1,6 @@
-from PyQt6.QtWidgets import QPushButton, QFrame, QLineEdit, QTextEdit, QGraphicsDropShadowEffect
-from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QPoint, QRectF, QUrl, pyqtProperty
-from PyQt6.QtGui import QColor, QPainter, QPen, QDragEnterEvent, QDropEvent, QDesktopServices
-
-
-class AnimButton(QPushButton):
-    def __init__(self, btn_type, func, parent=None):
-        super().__init__(parent)
-        self.setFixedSize(45, 30)
-        self.clicked.connect(func)
-        self.btn_type = btn_type
-        self._hover_progress = 0.0
-        self.parent_win = parent
-        self.anim = QPropertyAnimation(self, b"hoverProgress")
-        self.anim.setDuration(200)
-        self.anim.setEasingCurve(QEasingCurve.Type.OutQuad)
-        self.icon_color = QColor(0, 0, 0)
-
-    @pyqtProperty(float)
-    def hoverProgress(self): return self._hover_progress
-    @hoverProgress.setter
-    def hoverProgress(self, val): self._hover_progress = val; self.update()
-
-    def enterEvent(self, e):
-        self.anim.setStartValue(self.hoverProgress)
-        self.anim.setEndValue(1.0)
-        self.anim.start()
-        super().enterEvent(e)
-
-    def leaveEvent(self, e):
-        self.anim.setStartValue(self.hoverProgress)
-        self.anim.setEndValue(0.0)
-        self.anim.start()
-        super().leaveEvent(e)
-
-    def update_icon_color(self, c):
-        self.icon_color = QColor(c)
-        self.update()
-
-    def paintEvent(self, e):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        if self.btn_type == "close":
-            bg_col = QColor(232, 17, 35, int(255 * self._hover_progress))
-            icon_col = self.icon_color if self._hover_progress < 0.5 else QColor(255, 255, 255)
-        else:
-            bg_col = QColor(0, 0, 0, int(20 * self._hover_progress))
-            icon_col = self.icon_color
-        p.fillRect(self.rect(), bg_col)
-        pen = QPen(icon_col)
-        pen.setWidthF(1.2)
-        p.setPen(pen)
-        w, h = self.width(), self.height()
-        cx, cy = w / 2, h / 2
-
-        if self.btn_type == "close":
-            p.drawLine(QPoint(int(cx - 4), int(cy - 4)), QPoint(int(cx + 4), int(cy + 4)))
-            p.drawLine(QPoint(int(cx + 4), int(cy - 4)), QPoint(int(cx - 4), int(cy + 4)))
-        elif self.btn_type == "max":
-            is_max = False
-            if self.parent_win and hasattr(self.parent_win, 'is_max'): is_max = self.parent_win.is_max
-            if is_max:
-                p.drawRect(QRectF(cx - 2, cy - 4, 6, 6))
-                p.drawLine(QPoint(int(cx - 4), int(cy - 2)), QPoint(int(cx - 4), int(cy + 4)))
-                p.drawLine(QPoint(int(cx - 4), int(cy + 4)), QPoint(int(cx + 2), int(cy + 4)))
-            else:
-                p.drawRect(QRectF(cx - 4, cy - 4, 8, 8))
-        elif self.btn_type == "min":
-            p.drawLine(QPoint(int(cx - 4), int(cy)), QPoint(int(cx + 4), int(cy)))
+from PySide6.QtWidgets import QPushButton, QFrame, QLineEdit, QTextEdit
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QDesktopServices, QColor
 
 
 class IOSButton(QPushButton):
@@ -74,12 +8,8 @@ class IOSButton(QPushButton):
         super().__init__(text, parent)
         self.base_color = color
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFixedHeight(45)
-        self.shadow = QGraphicsDropShadowEffect()
-        self.shadow.setBlurRadius(15)
-        self.shadow.setColor(QColor(0, 0, 0, 40))
-        self.shadow.setOffset(0, 4)
-        self.setGraphicsEffect(self.shadow)
+        self.setMinimumHeight(34)
+        self.setSizePolicy(self.sizePolicy().horizontalPolicy(), self.sizePolicy().verticalPolicy())
         self.update_style()
 
     def set_theme_color(self, c):
@@ -87,16 +17,26 @@ class IOSButton(QPushButton):
         self.update_style()
 
     def update_style(self, pressed=False):
-        self.setStyleSheet(f"QPushButton {{background-color: {self.base_color}; color: white; border-radius: 12px; border: none; padding: 10px; font-family: 'Microsoft YaHei'; font-weight: bold; font-size: 10pt;}} QPushButton:hover {{background-color: {QColor(self.base_color).lighter(110).name()};}}")
+        base = QColor(self.base_color)
+        hover = base.darker(108).name()
+        down = base.darker(116).name()
+        self.setStyleSheet(
+            f"QPushButton {{"
+            f"background-color: {base.name()};"
+            f"color: #FFFFFF;"
+            f"border: 1px solid {base.darker(122).name()};"
+            f"border-radius: 5px;"
+            f"padding: 5px 12px;"
+            f"}}"
+            f"QPushButton:hover {{background-color: {hover};}}"
+            f"QPushButton:pressed {{background-color: {down};}}"
+            f"QPushButton:disabled {{background-color: #C8CDD2; color: #6E7781; border-color: #C8CDD2;}}"
+        )
 
     def enterEvent(self, e):
-        self.shadow.setBlurRadius(25)
-        self.shadow.setOffset(0, 6)
         super().enterEvent(e)
 
     def leaveEvent(self, e):
-        self.shadow.setBlurRadius(15)
-        self.shadow.setOffset(0, 4)
         super().leaveEvent(e)
 
     def mousePressEvent(self, e):
@@ -111,15 +51,13 @@ class IOSButton(QPushButton):
 class IOSCard(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setStyleSheet("IOSCard {background-color: rgba(255, 255, 255, 0.65); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.8);}")
-        s = QGraphicsDropShadowEffect()
-        s.setBlurRadius(30)
-        s.setColor(QColor(0, 0, 0, 20))
-        s.setOffset(0, 8)
-        self.setGraphicsEffect(s)
 
     def update_theme(self, bg, border):
-        self.setStyleSheet(f"IOSCard {{background-color: {bg}; border-radius: 20px; border: 1px solid {border};}}")
+        self.setStyleSheet(
+            f"background-color: {bg};"
+            f"border: none;"
+            f"border-radius: 6px;"
+        )
 
 
 class IOSInput(QLineEdit):
@@ -127,7 +65,7 @@ class IOSInput(QLineEdit):
         super().__init__(parent)
         self.setPlaceholderText(str(ph))
         self.setText(str(default))
-        self.setFixedHeight(38)
+        self.setMinimumHeight(30)
         self.setAcceptDrops(True)
 
     def dragEnterEvent(self, e: QDragEnterEvent):
@@ -148,11 +86,20 @@ class IOSInput(QLineEdit):
             super().dropEvent(e)
 
     def update_theme(self, bg, focus_bg, accent, text):
-        self.setStyleSheet(f"""
-            QLineEdit {{background-color: {bg}; border: 1px solid rgba(128,128,128,0.2); border-radius: 10px; padding: 0 10px; font-size: 13px; color: {text};}} 
-            QLineEdit:focus {{border: 1px solid {accent}; background-color: {focus_bg};}}
-            QLineEdit:disabled {{background-color: rgba(0,0,0,0.05); color: rgba(128,128,128,0.5); border: 1px dashed rgba(128,128,128,0.2);}}
-        """)
+        self.setStyleSheet(
+            f"QLineEdit {{"
+            f"background-color: {bg};"
+            f"color: {text};"
+            f"border: 1px solid #C7D0D9;"
+            f"border-radius: 5px;"
+            f"padding: 0 9px;"
+            f"}}"
+            f"QLineEdit:focus {{"
+            f"background-color: {focus_bg};"
+            f"border: 1px solid {accent};"
+            f"}}"
+            f"QLineEdit:disabled {{background-color: #F1F3F5; color: #8A949E; border-color: #D0D7DE;}}"
+        )
 
 
 class IOSLog(QTextEdit):
@@ -166,15 +113,13 @@ class IOSLog(QTextEdit):
         if anchor: QDesktopServices.openUrl(QUrl.fromLocalFile(anchor))
 
     def update_theme(self, text, bg, scrollbar_style=""):
-        self.setStyleSheet(f"""
-            QTextEdit {{
-                background-color: {bg};
-                border: none;
-                border-radius: 15px;
-                padding: 15px;
-                font-family: 'Consolas';
-                font-size: 12px;
-                color: {text};
-            }}
-            {scrollbar_style}
-        """)
+        self.setStyleSheet(
+            f"QTextEdit {{"
+            f"background-color: {bg};"
+            f"color: {text};"
+            f"border: 1px solid #C7D0D9;"
+            f"border-radius: 5px;"
+            f"padding: 6px;"
+            f"}}"
+            f"{scrollbar_style}"
+        )

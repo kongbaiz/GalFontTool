@@ -1,13 +1,12 @@
 import os
-import sys
-from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
+from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                              QLabel, QProgressBar, QFrame, QStackedWidget, QComboBox,
-                             QGridLayout, QScrollArea, QSizePolicy, QScroller, QSplitter, QTextEdit, QMenu)
-from PyQt6.QtCore import Qt, QPoint, QRectF, QSettings
-from PyQt6.QtGui import QFont, QCloseEvent, QShortcut, QKeySequence, QAction
+                             QGridLayout, QSizePolicy, QScroller, QSplitter, QTextEdit, QMenu)
+from PySide6.QtCore import Qt, QSettings
+from PySide6.QtGui import QFont, QShortcut, QKeySequence
 
 from config import THEMES
-from .widgets import AnimButton, IOSCard, IOSInput, IOSLog, IOSButton
+from .widgets import IOSCard, IOSInput, IOSLog, IOSButton
 
 from . import ui_setup
 from . import ui_actions
@@ -17,30 +16,20 @@ from . import ui_utils
 MAX_RECENT_FILES = 10
 
 class GalFontTool(QMainWindow):
-    EDGE_NONE = 0; EDGE_LEFT = 1; EDGE_TOP = 2
-    EDGE_RIGHT = 4; EDGE_BOTTOM = 8; EDGE_MARGIN = 6
-    
     IOSInput = IOSInput
 
     def __init__(self):
         super().__init__()
         config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config.ini")
         self.settings = QSettings(config_path, QSettings.Format.IniFormat)
-        
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setWindowTitle("Galgame 字体工具箱")
         self.setMouseTracking(True)
-        self.resize(1350, 900)
+        self.resize(1280, 860)
         self.setMinimumSize(400, 300)
-
-        self.is_dragging = False
-        self.is_resizing = False
-        self.resize_edge = self.EDGE_NONE
-        self.drag_start_pos = QPoint()
-        self.old_geometry = QRectF()
+        self.statusBar().showMessage("就绪")
         self.is_max = False
 
-        self.current_theme_name = "🌊 深海 (Ocean)"
+        self.current_theme_name = "简约蓝 (Clean)"
         self.theme = THEMES[self.current_theme_name]
         
         self.generated_font_path = ""
@@ -58,12 +47,10 @@ class GalFontTool(QMainWindow):
         self.load_settings()
         self.apply_theme(self.current_theme_name)
 
-        self.log_area.setHtml("""
-        <h3 style='color:#2196F3'>👋 欢迎使用 Galgame 字体工具箱</h3>
-        <p>这是一个全能的游戏字体处理工具，支持字体生成、精简、图片字库制作及更多功能。</p>
-        <p style='color:#888; font-size:12px;'>💡 快捷键：Ctrl+O 打开文件 | Ctrl+S 保存预设 | Ctrl+E 导出配置 | F5 刷新字体</p>
-        <hr>
-        """)
+        self.log_area.append("欢迎使用 Galgame 字体工具箱")
+        self.log_area.append("这是一个全能的游戏字体处理工具，支持字体生成、精简、图片字库制作及更多功能。")
+        self.log_area.append("快捷键：Ctrl+O 打开文件 | Ctrl+S 保存预设 | Ctrl+E 导出配置 | F5 刷新字体")
+        self.log_area.append("-" * 40)
 
     def setup_shortcuts(self):
         QShortcut(QKeySequence("Ctrl+O"), self, lambda: ui_utils.browse(self, self.in_src))
@@ -106,23 +93,6 @@ class GalFontTool(QMainWindow):
         if not self.recent_files:
             return
         menu = QMenu(self)
-        menu.setStyleSheet(f"""
-            QMenu {{
-                background-color: {self.theme['card_bg']};
-                border: 1px solid rgba(128,128,128,0.3);
-                border-radius: 8px;
-                padding: 5px;
-            }}
-            QMenu::item {{
-                padding: 8px 20px;
-                color: {self.theme['text_main']};
-            }}
-            QMenu::item:selected {{
-                background-color: {self.theme['accent']};
-                color: white;
-                border-radius: 4px;
-            }}
-        """)
         for f in self.recent_files:
             action = menu.addAction(os.path.basename(f))
             action.setToolTip(f)
@@ -151,10 +121,6 @@ class GalFontTool(QMainWindow):
         self.log("🗑️ 最近文件列表已清空")
 
     def bind_methods(self):
-        self.paintEvent = lambda event: ui_events.paintEvent(self, event)
-        self.mousePressEvent = lambda e: ui_events.mousePressEvent(self, e)
-        self.mouseMoveEvent = lambda e: ui_events.mouseMoveEvent(self, e)
-        self.mouseReleaseEvent = lambda e: ui_events.mouseReleaseEvent(self, e)
         self.dragEnterEvent = lambda e: ui_events.dragEnterEvent(self, e)
         self.dropEvent = lambda e: ui_events.dropEvent(self, e)
         self.closeEvent = lambda e: ui_events.closeEvent(self, e)
@@ -223,64 +189,61 @@ class GalFontTool(QMainWindow):
         self.setCentralWidget(central)
         central.setMouseTracking(True)
         main_layout = QVBoxLayout(central)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(16, 16, 16, 16)
+        main_layout.setSpacing(10)
 
-        title_bar = QHBoxLayout()
         self.title_label = QLabel("Galgame 字体工具箱")
         self.title_label.setFont(QFont("Microsoft YaHei", 12, QFont.Weight.Bold))
-        self.btn_min = AnimButton("min", self.showMinimized, self)
-        self.btn_max = AnimButton("max", self.toggle_max, self)
-        self.btn_close = AnimButton("close", self.close, self)
-        title_bar.addWidget(self.title_label)
-        title_bar.addStretch()
-        title_bar.addWidget(self.btn_min)
-        title_bar.addWidget(self.btn_max)
-        title_bar.addWidget(self.btn_close)
-        main_layout.addLayout(title_bar)
+        self.title_label.setVisible(False)
 
-        content_layout = QHBoxLayout()
+        content_layout = QVBoxLayout()
 
         self.left_card = IOSCard()
         left_layout = QVBoxLayout(self.left_card)
-        left_layout.setContentsMargins(20, 20, 20, 20)
-        left_layout.setSpacing(12)
+        left_layout.setContentsMargins(18, 18, 18, 18)
+        left_layout.setSpacing(10)
 
-        t_layout = QHBoxLayout()
-        self.lbl_theme = self.create_label("🎨 界面风格")
+        self.lbl_theme = self.create_label("界面风格")
+        self.lbl_theme.setVisible(False)
         self.combo_theme = QComboBox()
         self.combo_theme.addItems(THEMES.keys())
         self.combo_theme.currentTextChanged.connect(self.apply_theme)
-        self.combo_theme.setFixedHeight(30)
+        self.combo_theme.setMinimumHeight(30)
+        self.combo_theme.setEnabled(False)
+        self.combo_theme.setVisible(False)
 
         self.btn_reset = QPushButton("↺ 重置")
-        self.btn_reset.setFixedSize(60, 30)
+        self.btn_reset.setMinimumSize(60, 30)
         self.btn_reset.clicked.connect(self.reset_to_default)
         self.btn_reset.setToolTip("清除所有设置并恢复默认值")
-        self.btn_save_preset = QPushButton("💾"); self.btn_save_preset.setFixedSize(30, 30); self.btn_save_preset.clicked.connect(self.save_preset); self.btn_save_preset.setToolTip("保存当前配置为预设")
-        self.btn_load_preset = QPushButton("📁"); self.btn_load_preset.setFixedSize(30, 30); self.btn_load_preset.clicked.connect(self.load_preset); self.btn_load_preset.setToolTip("加载配置预设")
+        self.btn_save_preset = QPushButton("保存"); self.btn_save_preset.setMinimumSize(48, 30); self.btn_save_preset.clicked.connect(self.save_preset); self.btn_save_preset.setToolTip("保存当前配置为预设")
+        self.btn_load_preset = QPushButton("📁"); self.btn_load_preset.setMinimumSize(30, 30); self.btn_load_preset.clicked.connect(self.load_preset); self.btn_load_preset.setToolTip("加载配置预设")
 
-        t_layout.addWidget(self.lbl_theme); t_layout.addWidget(self.combo_theme); t_layout.addWidget(self.btn_save_preset); t_layout.addWidget(self.btn_load_preset); t_layout.addWidget(self.btn_reset)
-        left_layout.addLayout(t_layout)
+        self.lbl_theme.setText("界面主题：简约蓝")
+        self.btn_undo = QPushButton("↩ 撤销"); self.btn_undo.setMinimumHeight(28); self.btn_undo.clicked.connect(self.do_undo); self.btn_undo.setToolTip("撤销上一步文件操作"); self.btn_undo.setEnabled(False)
+        self.btn_redo = QPushButton("↪ 重做"); self.btn_redo.setMinimumHeight(28); self.btn_redo.clicked.connect(self.do_redo); self.btn_redo.setToolTip("重做文件操作"); self.btn_redo.setEnabled(False)
+        self.btn_history = QPushButton("历史"); self.btn_history.setMinimumHeight(28); self.btn_history.clicked.connect(self.show_history_dialog); self.btn_history.setToolTip("查看文件操作历史记录")
 
-        history_layout = QHBoxLayout()
-        self.btn_undo = QPushButton("↩ 撤销"); self.btn_undo.setFixedHeight(28); self.btn_undo.clicked.connect(self.do_undo); self.btn_undo.setToolTip("撤销上一步文件操作"); self.btn_undo.setEnabled(False)
-        self.btn_redo = QPushButton("↪ 重做"); self.btn_redo.setFixedHeight(28); self.btn_redo.clicked.connect(self.do_redo); self.btn_redo.setToolTip("重做文件操作"); self.btn_redo.setEnabled(False)
-        self.btn_history = QPushButton("📜 历史"); self.btn_history.setFixedHeight(28); self.btn_history.clicked.connect(self.show_history_dialog); self.btn_history.setToolTip("查看文件操作历史记录")
-        history_layout.addWidget(self.btn_undo); history_layout.addWidget(self.btn_redo); history_layout.addWidget(self.btn_history)
-        left_layout.addLayout(history_layout)
-
-        line = QFrame(); line.setFrameShape(QFrame.Shape.HLine); line.setStyleSheet("background: rgba(0,0,0,0.1);"); left_layout.addWidget(line)
+        tools_row = QHBoxLayout()
+        tools_row.setSpacing(6)
+        tools_row.addWidget(self.btn_save_preset)
+        tools_row.addWidget(self.btn_load_preset)
+        tools_row.addWidget(self.btn_reset)
+        tools_row.addStretch()
+        tools_row.addWidget(self.btn_undo)
+        tools_row.addWidget(self.btn_redo)
+        tools_row.addWidget(self.btn_history)
+        left_layout.addLayout(tools_row)
 
         self.lbl_src = self.create_label("1. 字体资源载入"); left_layout.addWidget(self.lbl_src)
         self.in_src = IOSInput("请拖入或选择字体文件 (.ttf/.otf)", "Font.ttf"); self.in_src.setToolTip("主字体文件路径，支持拖拽"); self.in_src.editingFinished.connect(self.on_source_font_changed)
-        self.btn_src = QPushButton("📁"); self.btn_src.setFixedSize(40, 38)
-        self.btn_src_recent = QPushButton("▼"); self.btn_src_recent.setFixedSize(24, 38); self.btn_src_recent.setToolTip("最近打开的文件")
+        self.btn_src = QPushButton("📁"); self.btn_src.setMinimumSize(40, 34)
+        self.btn_src_recent = QPushButton("▼"); self.btn_src_recent.setMinimumSize(24, 34); self.btn_src_recent.setToolTip("最近打开的文件")
         self.btn_src_recent.clicked.connect(lambda: self.show_recent_files_menu(self.btn_src_recent, self.in_src))
         self.in_fallback = IOSInput("可选：补全用字体 (如思源黑体.ttf)", ""); self.in_fallback.setToolTip("当主字体缺字时，自动从此字体复制字形补全。")
-        self.btn_fallback = QPushButton("📁"); self.btn_fallback.setFixedSize(40, 38)
+        self.btn_fallback = QPushButton("📁"); self.btn_fallback.setMinimumSize(40, 34)
         self.in_json = IOSInput("请拖入或选择 .json 码表文件", "custom_map.json"); self.in_json.setToolTip("字符映射表，推荐使用右侧'映射表管理'功能生成")
-        self.btn_json = QPushButton("📁"); self.btn_json.setFixedSize(40, 38)
+        self.btn_json = QPushButton("📁"); self.btn_json.setMinimumSize(40, 34)
         
         src_row = QHBoxLayout()
         self.btn_src.clicked.connect(lambda: self.browse(self.in_src))
@@ -296,10 +259,10 @@ class GalFontTool(QMainWindow):
         self.in_file_name = IOSInput("game.ttf", "game.ttf"); self.in_file_name.setToolTip("生成的文件名，必须以 .ttf 结尾")
         self.in_font_name = IOSInput("My Game Font", "My Game Font"); self.in_font_name.setToolTip("字体内部名称，游戏引擎读取时使用")
         self.in_output_dir = IOSInput("留空则输出到源文件同目录", ""); self.in_output_dir.setToolTip("自定义输出目录，留空则与源字体同目录")
-        self.btn_output_dir = QPushButton("📁"); self.btn_output_dir.setFixedSize(40, 30); self.btn_output_dir.clicked.connect(lambda: self.browse_folder(self.in_output_dir))
+        self.btn_output_dir = QPushButton("📁"); self.btn_output_dir.setMinimumSize(40, 30); self.btn_output_dir.clicked.connect(lambda: self.browse_folder(self.in_output_dir))
         self.combo_mode = QComboBox(); self.combo_mode.addItems(["👉 请选择处理模式...", "✅ 日繁映射: CN -> JP (生成日繁字体)", "🔄 逆向映射: JP -> CN (生成逆向字体)", "🎭 仅修改代码页标识 (不改字形)", "🔀 字形转换: 繁体 -> 简体 (OpenCC)", "🔀 字形转换: 简体 -> 繁体 (OpenCC)"])
         self.combo_mode.setCurrentIndex(0); self.combo_mode.currentIndexChanged.connect(self.on_mode_change); self.combo_mode.setToolTip("通常翻译请选择模式 1，配合生成的映射表使用")
-        self.combo_mode.setFixedHeight(38)
+        self.combo_mode.setMinimumHeight(34)
         
         self.combo_charset = QComboBox()
         self.combo_charset.addItems([
@@ -310,11 +273,11 @@ class GalFontTool(QMainWindow):
             "129 - Hangeul (韩文)"
         ])
         self.combo_charset.setToolTip("注入到字体的代码页标识 (ulCodePageRange)。\n游戏引擎通常根据此标志识别字体语言。")
-        self.combo_charset.setFixedHeight(38)
+        self.combo_charset.setMinimumHeight(34)
         
-        from PyQt6.QtWidgets import QCheckBox
-        self.chk_lock_file_name = QCheckBox("🔒"); self.chk_lock_file_name.setFixedWidth(35); self.chk_lock_file_name.setToolTip("锁定输出文件名，不随主字体变化")
-        self.chk_lock_font_name = QCheckBox("🔒"); self.chk_lock_font_name.setFixedWidth(35); self.chk_lock_font_name.setToolTip("锁定内部字体名，不随主字体变化")
+        from PySide6.QtWidgets import QCheckBox
+        self.chk_lock_file_name = QCheckBox(""); self.chk_lock_file_name.setFixedSize(30, 30); self.chk_lock_file_name.setObjectName("lockFileToggle"); self.chk_lock_file_name.setToolTip("锁定输出文件名，不随主字体变化")
+        self.chk_lock_font_name = QCheckBox(""); self.chk_lock_font_name.setFixedSize(30, 30); self.chk_lock_font_name.setObjectName("lockFontToggle"); self.chk_lock_font_name.setToolTip("锁定内部字体名，不随主字体变化")
         file_name_row = QHBoxLayout(); file_name_row.addWidget(self.in_file_name); file_name_row.addWidget(self.chk_lock_file_name)
         font_name_row = QHBoxLayout(); font_name_row.addWidget(self.in_font_name); font_name_row.addWidget(self.chk_lock_font_name)
         f_conf_l.addWidget(QLabel("输出文件名:"), 0, 0); f_conf_l.addLayout(file_name_row, 0, 1)
@@ -326,20 +289,22 @@ class GalFontTool(QMainWindow):
         left_layout.addLayout(f_conf_l)
         left_layout.addSpacing(10)
 
-        self.btn_gen_font = IOSButton("🔨 生成/处理字体"); self.btn_gen_font.clicked.connect(self.do_gen_font)
+        self.btn_gen_font = IOSButton("生成/处理字体"); self.btn_gen_font.clicked.connect(self.do_gen_font)
         left_layout.addWidget(self.btn_gen_font)
 
         ui_setup.setup_preview_ui(self, left_layout)
 
         left_layout.addStretch()
-        self.lbl_status = QLabel("就绪"); self.lbl_status.setAlignment(Qt.AlignmentFlag.AlignCenter); left_layout.addWidget(self.lbl_status)
-        
+
         self.right_card = IOSCard()
         right_layout = QVBoxLayout(self.right_card)
         right_layout.setContentsMargins(20, 20, 20, 20)
 
         self.tab_container = QWidget()
-        tc_layout = QHBoxLayout(self.tab_container); tc_layout.setContentsMargins(5, 5, 5, 5); tc_layout.setSpacing(10); tc_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        tc_layout = QGridLayout(self.tab_container)
+        tc_layout.setContentsMargins(5, 5, 5, 5)
+        tc_layout.setHorizontalSpacing(8)
+        tc_layout.setVerticalSpacing(8)
         
         self.btn_tab_info = QPushButton("字体信息")
         self.btn_tab_mapping = QPushButton("映射表")
@@ -357,19 +322,23 @@ class GalFontTool(QMainWindow):
                      self.btn_tab_subset, self.btn_tab_merge, self.btn_tab_imgfont, 
                      self.btn_tab_woff2, self.btn_tab_fix, self.btn_tab_clean, 
                      self.btn_tab_smart, self.btn_tab_help]
-        
+
+        tab_columns = 5
         for i, b in enumerate(self.tabs):
-            b.setCheckable(True); b.setCursor(Qt.CursorShape.PointingHandCursor); b.setFixedHeight(38); b.setMinimumWidth(100); b.clicked.connect(lambda checked, idx=i: self.switch_tab(idx)); tc_layout.addWidget(b)
-        
-        self.tab_scroll_area = QScrollArea(); self.tab_scroll_area.setWidget(self.tab_container); self.tab_scroll_area.setWidgetResizable(True)
+            row = i // tab_columns
+            col = i % tab_columns
+            b.setCheckable(True)
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+            b.setMinimumHeight(30)
+            b.setMinimumWidth(92)
+            b.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            b.clicked.connect(lambda checked, idx=i: self.switch_tab(idx))
+            tc_layout.addWidget(b, row, col)
+        for col in range(tab_columns):
+            tc_layout.setColumnStretch(col, 1)
         self.tab_container.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.tab_scroll_area.setFixedHeight(60); self.tab_scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff); self.tab_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.tab_scroll_area.setFrameShape(QFrame.Shape.NoFrame); self.tab_scroll_area.setStyleSheet("background: transparent;")
-        
-        def manual_wheel_event(event):
-            delta = event.angleDelta().y(); bar = self.tab_scroll_area.horizontalScrollBar(); bar.setValue(bar.value() - delta); event.accept()
-        self.tab_scroll_area.wheelEvent = manual_wheel_event
-        right_layout.addWidget(self.tab_scroll_area)
+        self.tab_container.setMinimumHeight(112)
+        right_layout.addWidget(self.tab_container)
 
         self.stack = QStackedWidget()
         
@@ -385,27 +354,35 @@ class GalFontTool(QMainWindow):
         p_smart = QWidget(); ui_setup.setup_smart_fallback_ui(self, p_smart)
         
         p_help = QWidget(); l_help = QVBoxLayout(p_help)
-        self.help_browser = QTextEdit(); self.help_browser.setReadOnly(True); self.help_browser.setStyleSheet("background: transparent; border: none; font-size: 13px; line-height: 150%;")
+        self.help_browser = QTextEdit(); self.help_browser.setReadOnly(True)
         self.set_help_content(); l_help.addWidget(self.help_browser)
 
         self.stack.addWidget(p_info); self.stack.addWidget(p_mapping); self.stack.addWidget(p_analysis)
         self.stack.addWidget(p_subset); self.stack.addWidget(p_merge); self.stack.addWidget(p_imgfont)
-        self.stack.addWidget(p_woff2); self.stack.addWidget(p_fix); self.stack.addWidget(p_clean); 
+        self.stack.addWidget(p_woff2); self.stack.addWidget(p_fix); self.stack.addWidget(p_clean)
         self.stack.addWidget(p_smart); self.stack.addWidget(p_help)
         
         splitter = QSplitter(Qt.Orientation.Vertical); splitter.setChildrenCollapsible(False)
-        splitter.setStyleSheet("QSplitter::handle { background-color: rgba(0,0,0,0.05); height: 8px; border-radius: 4px; margin: 2px 0px; } QSplitter::handle:hover { background-color: rgba(33, 150, 243, 0.6); }")
         splitter.addWidget(self.stack)
 
         self.log_area = IOSLog()
+        self.log_area.setMinimumHeight(110)
         QScroller.grabGesture(self.log_area.viewport(), QScroller.ScrollerGestureType.LeftMouseButtonGesture)
         splitter.addWidget(self.log_area)
-        splitter.setStretchFactor(0, 7); splitter.setStretchFactor(1, 3)
+        splitter.setStretchFactor(0, 8); splitter.setStretchFactor(1, 2)
+        splitter.setSizes([1000, 150])
         right_layout.addWidget(splitter)
 
-        self.progress = QProgressBar(); self.progress.setFixedHeight(6); self.progress.setTextVisible(False)
+        self.progress = QProgressBar(); self.progress.setMinimumHeight(6); self.progress.setTextVisible(False)
         right_layout.addWidget(self.progress)
 
-        content_layout.addWidget(self.left_card, 40)
-        content_layout.addWidget(self.right_card, 60)
+        self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.main_splitter.setChildrenCollapsible(False)
+        self.main_splitter.setHandleWidth(8)
+        self.main_splitter.addWidget(self.left_card)
+        self.main_splitter.addWidget(self.right_card)
+        self.main_splitter.setStretchFactor(0, 1)
+        self.main_splitter.setStretchFactor(1, 1)
+        self.main_splitter.setSizes([640, 640])
+        content_layout.addWidget(self.main_splitter)
         main_layout.addLayout(content_layout)
