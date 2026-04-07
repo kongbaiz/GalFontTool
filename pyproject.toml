@@ -1,0 +1,13 @@
+[project]
+name = "galfonttool"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "brotli>=1.2.0",
+    "fonttools>=4.62.1",
+    "opencc-python-reimplemented>=0.1.7",
+    "pillow>=12.2.0",
+    "pyqt6>=6.11.0",
+]
