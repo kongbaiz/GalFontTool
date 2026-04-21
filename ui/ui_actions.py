@@ -1212,7 +1212,6 @@ def do_export_config(main_window):
             'output_dir': main_window.in_output_dir.text() if hasattr(main_window, 'in_output_dir') else '',
             'mode': main_window.combo_mode.currentIndex(),
         },
-        'theme': main_window.current_theme_name,
         'recent_files': main_window.recent_files if hasattr(main_window, 'recent_files') else [],
         'mapping': {
             'src': main_window.map_src.text(),
@@ -1294,10 +1293,6 @@ def do_import_config(main_window):
             if 'output_dir' in b and hasattr(main_window, 'in_output_dir'):
                 main_window.in_output_dir.setText(b['output_dir'])
             if 'mode' in b: main_window.combo_mode.setCurrentIndex(b['mode'])
-        
-        if 'theme' in config:
-            idx = main_window.combo_theme.findText(config['theme'])
-            if idx >= 0: main_window.combo_theme.setCurrentIndex(idx)
         
         if 'recent_files' in config and hasattr(main_window, 'recent_files'):
             main_window.recent_files = [f for f in config['recent_files'] if os.path.exists(f)]

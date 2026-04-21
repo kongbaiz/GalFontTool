@@ -722,7 +722,6 @@ def setup_smart_fallback_ui(main_window, parent_widget):
     lbl = QLabel("智能补字")
     lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
     lbl.setFont(QFont("Microsoft YaHei", 14, QFont.Weight.Bold))
-    lbl.setStyleSheet(f"color: {main_window.theme['text_main']};")
     l_smart.addWidget(lbl)
     gd = QGridLayout()
     gd.setSpacing(10)
